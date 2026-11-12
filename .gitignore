@@ -1,0 +1,16 @@
+.spectra/
+docs/spectra/.vector-search.db*
+
+# macOS
+.DS_Store
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OSM raw snapshots / intermediate extracts (large, re-downloadable)
+*.osm.pbf
+*.osm
