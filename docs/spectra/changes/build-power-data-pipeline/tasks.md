@@ -33,7 +33,7 @@
 ## 7. 驗收
 
 - [x] 7.1 [after: 6.2] 依需求文件第 8 節做資料面驗收，結果整理成表格回報使用者：設施數與線段數對照原作參考值（約 700、約 2,100，原作含離島，比較時註明；差距超過 30% 時列出可能原因與案例）、抽查大潭、通霄、興達、台中、萬大、核一、核二、核三、和平、麥寮 10 座電廠的位置、`energy` 與 `energy_sources`、以腳本確認所有缺值欄位為 `null`（無 0 或空字串）、以腳本確認輸出中沒有完全落在金門／馬祖／澎湖範圍框內的圖徵、`lines.geojson` 未壓縮小於 5 MB，並列出所有 `mixed` 設施、純數字容量案例與離岸風場案例。驗證：報告已交付，且使用者對去重門檻、離岸風場是否聚合做出決定。
-- [ ] 7.2 [after: 7.1] 依使用者在 7.1 的決定調整 `--rooftop-threshold-mw`／`--dedup-distance-m` 預設值（若有變更），重跑 `make data`，並以 git commit 保存 `data/processed/` 輸出。驗證：`git ls-files data/processed` 列出四個輸出檔，`stats.json` 的 `built_at` 為本次重跑時間。
+- [x] 7.2 [after: 7.1] 依使用者在 7.1 的決定調整 `--rooftop-threshold-mw`／`--dedup-distance-m` 預設值（若有變更），重跑 `make data`，並以 git commit 保存 `data/processed/` 輸出。驗證：`git ls-files data/processed` 列出四個輸出檔，`stats.json` 的 `built_at` 為本次重跑時間。
 
 ## 變更紀錄
 
