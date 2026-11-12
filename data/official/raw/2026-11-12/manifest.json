@@ -1,0 +1,38 @@
+{
+  "downloaded_at": "2026-11-12T07:57:40Z",
+  "license": "政府資料開放授權條款第1版",
+  "files": [
+    {
+      "dataset_id": "8934",
+      "title": "台灣電力公司水火力發電廠位置及機組設備",
+      "url": "https://service.taipower.com.tw/data/opendata/apply/file/d004011/001.csv",
+      "file": "thermal_hydro.csv",
+      "sha256": "e14be5bd3280bd6f7f1a02d9d7fc92c8c5f55bb9d45c2f0a5be2636243609d3e",
+      "bytes": 21364
+    },
+    {
+      "dataset_id": "10858",
+      "title": "台灣電力公司核能發電廠位置及機組設備",
+      "url": "https://service.taipower.com.tw/data/opendata/apply/file/d056001/001.csv",
+      "file": "nuclear.csv",
+      "sha256": "13ff058b2a720579c9ec7b6a34ff78b76799bbe6e88af5b66a8e3a2aad6b5143",
+      "bytes": 882
+    },
+    {
+      "dataset_id": "17141",
+      "title": "台灣電力公司再生能源各場址資料",
+      "url": "https://service.taipower.com.tw/data/opendata/apply/file/d693002/001.csv",
+      "file": "renewable.csv",
+      "sha256": "366e7f928e60c9c1dc531eb5d9f39b6f3b02c88417e7ac0edabc8dbbd14b49c6",
+      "bytes": 20057
+    },
+    {
+      "dataset_id": "8931",
+      "title": "台灣電力公司各機組發電量即時資訊(含外購電力)",
+      "url": "https://service.taipower.com.tw/data/opendata/apply/file/d006001/001.json",
+      "file": "units.json",
+      "sha256": "1fab779f410c3478b12e958725fbbbca0dd4ec7022dcbde690929b09bf3cc314",
+      "bytes": 36139
+    }
+  ]
+}
