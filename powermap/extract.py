@@ -22,11 +22,8 @@ from pathlib import Path
 import osmium
 from shapely.geometry import MultiPolygon, box, mapping, shape
 
+from powermap.osm import FACILITY_VALUES, POWER_VALUES, osm_ref
 from powermap.parsers import classify_energy
-
-POWER_VALUES = ("plant", "generator", "line", "minor_line", "cable")
-FACILITY_VALUES = ("plant", "generator")
-LINE_VALUES = ("line", "minor_line", "cable")
 
 #: (min_lon, min_lat, max_lon, max_lat). West edge 119.3 keeps Changhua
 #: offshore wind farms (lon 119.8–119.9); Penghu is removed separately.
@@ -38,14 +35,6 @@ EXCLUDED_REGIONS = {
     "matsu": (119.9, 25.9, 120.6, 26.4),
 }
 REGION_NAMES = tuple(EXCLUDED_REGIONS) + ("other",)
-
-_PREFIX = {"node": "n", "way": "w", "relation": "r"}
-
-
-def osm_ref(osm_type: str, osm_id: int) -> str:
-    """Return the short id used in reports, e.g. ``w123``."""
-    return f"{_PREFIX[osm_type]}{osm_id}"
-
 
 class ScopeFilter:
     """Main island scope filter (see spec 'Main island scope filter')."""
@@ -122,6 +111,8 @@ def extract(path: str | Path, scope: ScopeFilter | None = None) -> ExtractResult
     candidates: list[tuple[str, int, dict, object]] = []  # (osm_type, id, tags, geometry)
     pending_closed_ways: dict[int, tuple[dict, object]] = {}
     area_way_ids: set[int] = set()
+    multipolygon_ids: set[int] = set()  # facility multipolygon relations seen
+    area_relation_ids: set[int] = set()  # ... and those that produced an area
     geometryless_relations = 0
     invalid = 0
 
@@ -149,6 +140,8 @@ def extract(path: str | Path, scope: ScopeFilter | None = None) -> ExtractResult
             elif obj.is_area():
                 if power not in FACILITY_VALUES:
                     continue
+                if not obj.from_way():
+                    area_relation_ids.add(obj.orig_id())  # before geometry, which may fail
                 geom = _normalize_polygon(shape(json.loads(factory.create_multipolygon(obj))))
                 if obj.from_way():
                     area_way_ids.add(obj.orig_id())
@@ -157,10 +150,15 @@ def extract(path: str | Path, scope: ScopeFilter | None = None) -> ExtractResult
                     candidates.append(("relation", obj.orig_id(), tags, geom))
             elif obj.is_relation():
                 is_multipolygon = tags.get("type") == "multipolygon"
-                if not (is_multipolygon and power in FACILITY_VALUES):
+                if is_multipolygon and power in FACILITY_VALUES:
+                    multipolygon_ids.add(obj.id)
+                else:
                     geometryless_relations += 1
         except (osmium.InvalidLocationError, RuntimeError, ValueError):
             invalid += 1
+
+    # Multipolygons that yield no area at all (e.g. missing members) are invalid too.
+    invalid += len(multipolygon_ids - area_relation_ids)
 
     for way_id, (tags, geom) in pending_closed_ways.items():
         if way_id not in area_way_ids:

@@ -50,6 +50,11 @@ def test_voltage_source_osm():
     assert props["voltage_source"] == "osm" and props["missing_voltage"] is False
 
 
+def test_empty_voltage_tag_is_null():
+    props = build_lines([way(11, [[121.0, 24.0], [121.1, 24.0]], voltage="")])[0][0]["properties"]
+    assert props["voltage_raw"] is None and props["voltage_class"] == "missing"
+
+
 def test_submarine_cable_keeps_location():
     f = way(7, [[120.1, 23.6], [119.6, 23.5]], location="underwater", voltage="161000")
     f["properties"]["tags"]["power"] = "cable"

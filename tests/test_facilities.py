@@ -7,6 +7,7 @@ import pytest
 from shapely.geometry import Point, Polygon, shape
 
 from powermap.facilities import PROPERTY_KEYS, Facility, build, main, write_outputs
+from tests.test_parsers import CAPACITY_CASES
 
 # Roughly 1 degree of longitude ≈ 101.8 km and 1 degree of latitude ≈ 110.8 km at lat 24.
 M_LON = 1 / 101_800
@@ -48,6 +49,19 @@ def test_mixed_energy_properties():
     props = fac("plant", square(), **{"plant:source": "coal;gas"}).properties()
     assert props["energy"] == "mixed" and props["energy_sources"] == ["coal", "gas"]
     assert props["energy_data_source"] == "osm" and props["source_raw"] == "coal;gas"
+
+
+@pytest.mark.parametrize("tag,expected", CAPACITY_CASES)
+def test_capacity_raw_kept_only_when_unparsed(tag, expected):
+    tags = {} if tag is None else {"plant:output:electricity": tag}
+    props = fac("plant", square(), **tags).properties()
+    assert props["capacity_raw"] == (tag if expected is None else None)
+    assert props["missing_capacity"] is (expected is None)
+
+
+def test_empty_raw_tags_become_null():
+    props = fac("plant", square(), **{"plant:source": "", "plant:output:electricity": " "}).properties()
+    assert props["source_raw"] is None and props["capacity_raw"] is None
 
 
 def test_name_falls_back_to_name_zh():
@@ -137,6 +151,7 @@ def test_output_properties_and_nulls(tmp_path):
         for key in ("name", "operator", "source_raw", "capacity_mw", "capacity_raw", "capacity_source", "energy_data_source"):
             assert props[key] is None, key
         assert props["energy_sources"] == [] and isinstance(props["n_generators"], int)
+        assert props["missing_capacity"] is True
     with log.open() as fh:
         assert next(csv.reader(fh)) == ["action", "kept_osm_id", "dropped_osm_id", "reason", "distance_m"]
 

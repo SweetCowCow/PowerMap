@@ -23,10 +23,9 @@ from shapely import STRtree
 from shapely.geometry import Point, shape
 
 from powermap.geo import to_3826
+from powermap.osm import osm_ref, osm_url, tag_text
 from powermap.parsers import classify_energy, parse_capacity_mw
 
-OSM_URL = "https://www.openstreetmap.org/{type}/{id}"
-PREFIX = {"node": "n", "way": "w", "relation": "r"}
 PROPERTY_KEYS = (
     "osm_id",
     "osm_url",
@@ -48,14 +47,6 @@ PROPERTY_KEYS = (
 DEDUP_LOG_HEADER = ("action", "kept_osm_id", "dropped_osm_id", "reason", "distance_m")
 
 
-def _text(value: str | None) -> str | None:
-    """Trimmed tag text; empty strings become ``None``."""
-    if value is None:
-        return None
-    value = value.strip()
-    return value or None
-
-
 @dataclass
 class Facility:
     osm_type: str
@@ -72,11 +63,11 @@ class Facility:
 
     @property
     def ref(self) -> str:
-        return f"{PREFIX[self.osm_type]}{self.osm_id}"
+        return osm_ref(self.osm_type, self.osm_id)
 
     @property
     def name(self) -> str | None:
-        return _text(self.tags.get("name")) or _text(self.tags.get("name:zh"))
+        return tag_text(self.tags.get("name")) or tag_text(self.tags.get("name:zh"))
 
     @property
     def energy(self) -> tuple[str, list[str]]:
@@ -88,15 +79,15 @@ class Facility:
 
     def properties(self) -> dict:
         energy, sources = self.energy
-        raw_source = self.tags.get(f"{self.kind}:source")
-        raw_capacity = self.tags.get(f"{self.kind}:output:electricity")
+        raw_source = tag_text(self.tags.get(f"{self.kind}:source"))
+        raw_capacity = tag_text(self.tags.get(f"{self.kind}:output:electricity"))
         capacity = self.capacity_mw
         return {
             "osm_id": self.ref,
-            "osm_url": OSM_URL.format(type=self.osm_type, id=self.osm_id),
+            "osm_url": osm_url(self.osm_type, self.osm_id),
             "kind": self.kind,
             "name": self.name,
-            "operator": _text(self.tags.get("operator")),
+            "operator": tag_text(self.tags.get("operator")),
             "energy": energy,
             "energy_sources": sources,
             "energy_data_source": None if energy == "unknown" else "osm",
@@ -170,7 +161,7 @@ def exclude_rooftop(facilities: list[Facility], threshold_mw: float) -> tuple[li
     kept, log = [], []
     for f in facilities:
         if f.kind == "generator":
-            rooftop = _text(f.tags.get("generator:location")) == "roof"
+            rooftop = tag_text(f.tags.get("generator:location")) == "roof"
             capacity = f.capacity_mw
             small_solar = f.energy[0] == "solar" and capacity is not None and capacity < threshold_mw
             if rooftop or small_solar:

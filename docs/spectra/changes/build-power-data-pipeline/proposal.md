@@ -45,5 +45,5 @@
 
 - 新增檔案：pyproject.toml、Makefile、README.md、scripts/、powermap/、tests/、data/processed/
 - 修改檔案：.gitignore（排除 data/raw/ 與 data/interim/）
-- 新增依賴：uv（安裝到 ~/.local/bin）、Python 3.11+、osmium（pyosmium）、geopandas、shapely、pandas、pyogrio、pytest
+- 新增依賴：uv（安裝到 ~/.local/bin）、Python 3.11+、osmium（pyosmium）、geopandas、shapely、pyproj、pandas、pyogrio、pytest
 - 外部資料：Geofabrik 台灣快照（ODbL 1.0；檔案大小為估計值約數百 MB，未量測，下載後以 ls -lh 確認；不進 git）

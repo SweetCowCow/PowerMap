@@ -19,9 +19,9 @@ from pathlib import Path
 from shapely.geometry import shape
 
 from powermap.geo import to_3826, to_4326
+from powermap.osm import LINE_VALUES, osm_ref, osm_url, tag_text
 from powermap.parsers import classify_voltage, parse_voltage_max_kv
 
-LINE_KINDS = ("line", "minor_line", "cable")
 SIMPLIFY_TOLERANCE_M = 10.0
 DECIMALS = 5
 PROPERTY_KEYS = (
@@ -35,14 +35,6 @@ PROPERTY_KEYS = (
     "missing_voltage",
     "location",
 )
-OSM_URL = "https://www.openstreetmap.org/way/{id}"
-
-
-def _text(value: str | None) -> str | None:
-    if value is None:
-        return None
-    value = value.strip()
-    return value or None
 
 
 def simplify_line(geom) -> list[list[float]] | None:
@@ -61,15 +53,15 @@ def simplify_line(geom) -> list[list[float]] | None:
 def line_properties(osm_id: int, tags: dict) -> dict:
     kv = parse_voltage_max_kv(tags.get("voltage"))
     return {
-        "osm_id": f"w{osm_id}",
-        "osm_url": OSM_URL.format(id=osm_id),
+        "osm_id": osm_ref("way", osm_id),
+        "osm_url": osm_url("way", osm_id),
         "kind": tags["power"],
         "voltage_max_kv": kv,
-        "voltage_raw": tags.get("voltage"),
+        "voltage_raw": tag_text(tags.get("voltage")),
         "voltage_class": classify_voltage(kv),
         "voltage_source": None if kv is None else "osm",
         "missing_voltage": kv is None,
-        "location": _text(tags.get("location")),
+        "location": tag_text(tags.get("location")),
     }
 
 
@@ -80,7 +72,7 @@ def build_lines(features: list[dict]) -> tuple[list[dict], int]:
     for feature in features:
         props = feature["properties"]
         tags = props["tags"]
-        if tags.get("power") not in LINE_KINDS or props["osm_type"] != "way":
+        if tags.get("power") not in LINE_VALUES or props["osm_type"] != "way":
             continue
         if feature["geometry"]["type"] != "LineString":
             continue

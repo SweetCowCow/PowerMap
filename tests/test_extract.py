@@ -53,6 +53,25 @@ def test_multipolygon_relation_plant(tmp_path):
     assert result.geometryless_relations == 1
 
 
+def test_broken_multipolygon_counted_as_invalid(tmp_path):
+    b = OsmBuilder()
+    lon, lat = MAIN
+    open_ring = b.way([(lon, lat), (lon + 0.01, lat), (lon + 0.01, lat + 0.01)], {}, way_id=21)
+    b.relation(32, [("w", open_ring, "outer")], {"type": "multipolygon", "power": "plant"})
+    result = extract(b.write(tmp_path / "a.osm.pbf"))
+    assert ("relation", 32) not in _by_id(result)
+    assert result.invalid_skipped == 1 and result.geometryless_relations == 0
+
+
+def test_multipolygon_with_missing_member_counted_as_invalid(tmp_path):
+    b = OsmBuilder()
+    b.node(*MAIN, tags={"power": "generator"})
+    b.relation(33, [("w", 999, "outer")], {"type": "multipolygon", "power": "plant"})
+    result = extract(b.write(tmp_path / "a.osm.pbf"))
+    assert ("relation", 33) not in _by_id(result)
+    assert result.invalid_skipped == 1
+
+
 def test_header_timestamp_present(tmp_path):
     b = OsmBuilder()
     b.node(*MAIN, tags={"power": "generator"})
