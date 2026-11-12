@@ -1,0 +1,44 @@
+{
+  "snapshot": "2026-11-11T21:22:47Z",
+  "built_at": "2026-11-12T05:58:13Z",
+  "facilities": 1584,
+  "lines": 2515,
+  "lines_missing_voltage": 1059,
+  "facilities_missing_capacity": 1354,
+  "by_energy": {
+    "solar": 1036,
+    "wind": 414,
+    "hydro": 54,
+    "gas": 12,
+    "coal": 10,
+    "nuclear": 4,
+    "geothermal": 2,
+    "other": 19,
+    "mixed": 3,
+    "unknown": 30
+  },
+  "by_energy_source": {
+    "solar": 1037,
+    "wind": 415,
+    "hydro": 54,
+    "gas": 14,
+    "coal": 12,
+    "nuclear": 4,
+    "geothermal": 2,
+    "other": 19
+  },
+  "by_voltage_class": {
+    "ehv": 264,
+    "hv": 649,
+    "mv": 542,
+    "lv": 1,
+    "missing": 1059
+  },
+  "excluded_rooftop_solar": 7,
+  "excluded_outside_main_island": {
+    "penghu": 57,
+    "kinmen": 7,
+    "matsu": 8,
+    "other": 122
+  }
+}
