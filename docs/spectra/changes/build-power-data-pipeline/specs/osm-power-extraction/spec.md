@@ -58,7 +58,7 @@ The system SHALL extract nodes, ways, and relations whose `power` tag is one of 
 
 ### Requirement: Main island scope filter
 
-The system SHALL keep a feature only when its geometry intersects the main island bounding box, which defaults to longitude 119.9–122.2 and latitude 21.8–25.4 and is configurable with `--main-bbox`. A kept feature SHALL be emitted with its full geometry and SHALL NOT be clipped. Each excluded feature SHALL be counted under exactly one region: `kinmen` (lon 118.1–118.5, lat 24.3–24.6), `matsu` (lon 119.9–120.6, lat 25.9–26.4), `penghu` (lon 119.3–119.75, lat 23.1–23.8), or `other` when its geometry intersects none of these three boxes.
+The system SHALL keep a feature only when its geometry intersects the main island bounding box, which defaults to longitude 119.3–122.2 and latitude 21.8–25.4 and is configurable with `--main-bbox`, and its geometry is not entirely within the Penghu box (lon 119.3–119.75, lat 23.1–23.8). A kept feature SHALL be emitted with its full geometry and SHALL NOT be clipped. Each excluded feature SHALL be counted under exactly one region, checked in this order: `penghu` when its geometry is entirely within the Penghu box, `kinmen` when it intersects lon 118.1–118.5, lat 24.3–24.6, `matsu` when it intersects lon 119.9–120.6, lat 25.9–26.4, otherwise `other`.
 
 #### Scenario: Apply the main island filter
 
@@ -75,6 +75,8 @@ The system SHALL keep a feature only when its geometry intersects the main islan
 | Point at lon 119.95, lat 26.15 (Matsu) | excluded | `matsu` |
 | Point at lon 119.6, lat 23.57 (Penghu) | excluded | `penghu` |
 | Point at lon 116.7, lat 20.7 (Pratas) | excluded | `other` |
+| Point at lon 119.85, lat 24.1 (Changhua offshore wind) | kept | — |
+| Point at lon 120.0, lat 25.8 (Fujian offshore wind) | excluded | `other` |
 | Line from lon 119.6, lat 23.5 to lon 120.15, lat 23.6 (Taiwan–Penghu cable) | kept, geometry unclipped | — |
 
 ### Requirement: Extraction summary

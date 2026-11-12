@@ -11,6 +11,9 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# OSM raw snapshots / intermediate extracts (large, re-downloadable)
+# Raw snapshots and intermediate extracts (large, re-downloadable)
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
 *.osm.pbf
-*.osm
