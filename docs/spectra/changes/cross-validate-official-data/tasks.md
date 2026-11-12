@@ -29,8 +29,8 @@
 
 ## 5. 人工對照與驗收
 
-- [ ] 5.1 [after: 1.2, 4.1] 以真實資料執行 `make crosswalk-candidates`，把候選整理成表格交給使用者審閱：每座官方電廠的候選、建議的 relation 與理由。依使用者確認的結果寫入 `data/official/crosswalk.csv`。驗證：使用者確認對照表內容；`make data` 回報未審閱數為 0，失效 id 數為 0。
-- [ ] 5.2 [after: 5.1] 資料面驗收，結果整理成表格回報使用者：
+- [x] 5.1 [after: 1.2, 4.1] 以真實資料執行 `make crosswalk-candidates`，把候選整理成表格交給使用者審閱：每座官方電廠的候選、建議的 relation 與理由。依使用者確認的結果寫入 `data/official/crosswalk.csv`。驗證：使用者確認對照表內容；`make data` 回報未審閱數為 0，失效 id 數為 0。
+- [x] 5.2 [after: 5.1] 資料面驗收，結果整理成表格回報使用者：
   - 大潭只剩一筆設施
   - 興達列在 `official_diff.csv`
   - 補上容量的設施數與缺容量比例的變化
@@ -38,7 +38,7 @@
   - 所有缺值仍為 `null`
 
   驗證：報告已交付，且使用者對差異門檻是否調整做出決定。
-- [ ] 5.3 [after: 5.2] 依使用者決定調整 `CAPACITY_DIFF_THRESHOLD`（若有變更），重跑 `make data`，以 git commit 保存 `data/official/` 與 `data/processed/` 的輸出。驗證：`git status` 乾淨，`stats.json` 的 `official.unmatched.unreviewed` 為 0。
+- [x] 5.3 [after: 5.2] 依使用者決定調整 `CAPACITY_DIFF_THRESHOLD`（若有變更），重跑 `make data`，以 git commit 保存 `data/official/` 與 `data/processed/` 的輸出。驗證：`git status` 乾淨，`stats.json` 的 `official.unmatched.unreviewed` 為 0。
 
 ## 變更紀錄
 
