@@ -128,7 +128,7 @@ def test_all_ids_stale_reported_osm_missing(tmp_path):
 def test_unknown_official_id_ignored(tmp_path):
     path = write_crosswalk(tmp_path / "c.csv", ["tp-plant:協和發電廠,w1,same,"])
     cw = load_crosswalk(path, OFFICIAL_IDS, FACILITY_IDS)
-    assert cw.links == {} and any("協和" in w for w in cw.warnings)
+    assert cw.links == {} and cw.ignored_ids == 1 and any("協和" in w for w in cw.warnings)
 
 
 def test_missing_file_means_unreviewed(tmp_path):

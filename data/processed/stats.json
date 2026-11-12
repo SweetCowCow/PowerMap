@@ -1,6 +1,6 @@
 {
   "snapshot": "2026-11-11T21:22:47Z",
-  "built_at": "2026-11-12T09:20:26Z",
+  "built_at": "2026-11-12T15:27:42Z",
   "facilities": 1577,
   "lines": 2515,
   "lines_missing_voltage": 1059,
@@ -8,19 +8,19 @@
   "by_energy": {
     "solar": 1033,
     "wind": 414,
-    "hydro": 52,
+    "hydro": 53,
     "gas": 11,
     "coal": 10,
     "nuclear": 4,
     "geothermal": 2,
     "other": 19,
     "mixed": 3,
-    "unknown": 29
+    "unknown": 28
   },
   "by_energy_source": {
     "solar": 1034,
     "wind": 415,
-    "hydro": 52,
+    "hydro": 53,
     "gas": 13,
     "coal": 12,
     "nuclear": 4,
@@ -47,7 +47,7 @@
     "excluded_outside_main_island": 13,
     "linked": 39,
     "facilities_with_official_id": 62,
-    "capacity_filled": 7,
+    "capacity_filled": 6,
     "merged": 7,
     "capacity_discrepancies": 6,
     "unmatched": {

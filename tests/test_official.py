@@ -196,3 +196,16 @@ def test_outlying_island_plants_excluded(tmp_path):
     assert list(by_id(result)) == ["tp-plant:臺中發電廠"]
     assert result["excluded_outside_main_island"] == 3
     assert by_id(result)["tp-plant:臺中發電廠"]["county"] == "台中市"
+
+
+def test_units_json_without_aadata_rejected(tmp_path):
+    root = write_snapshot(tmp_path)
+    (root / "units.json").write_text(json.dumps({"data": []}), encoding="utf-8")
+    with pytest.raises(OfficialDataError, match="aaData"):
+        normalize(root)
+
+
+def test_units_json_row_missing_column_rejected(tmp_path):
+    units = [unit("民營電廠-燃氣", "海湖#1", "450.0"), {"機組類型": "民營電廠-燃氣"}]
+    with pytest.raises(OfficialDataError, match="row 1: missing column"):
+        normalize(write_snapshot(tmp_path, units=units))

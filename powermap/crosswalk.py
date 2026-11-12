@@ -113,7 +113,7 @@ class Crosswalk:
     links: dict[str, Link] = field(default_factory=dict)  # by official_id
     osm_missing: list[str] = field(default_factory=list)  # official ids whose ids were all ignored
     warnings: list[str] = field(default_factory=list)
-    ignored_ids: int = 0
+    ignored_ids: int = 0  # stale OSM ids plus rows whose official_id is no longer listed
 
 
 def load_crosswalk(path: str | Path, official_ids: set[str], facility_ids: set[str]) -> Crosswalk:
@@ -151,6 +151,7 @@ def load_crosswalk(path: str | Path, official_ids: set[str], facility_ids: set[s
     for line, row in rows:
         official_id, relation = row["official_id"].strip(), row["relation"].strip()
         if official_id not in official_ids:
+            result.ignored_ids += 1
             result.warnings.append(f"line {line}: {official_id} is not in the official list; row ignored")
             continue
         ids = []

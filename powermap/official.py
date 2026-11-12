@@ -237,11 +237,13 @@ def normalize(raw_dir: str | Path) -> dict:
         b.add_unit(f"tp-re:{station}", "17141", station, row["地址/Address"], energy,
                    _kw_to_mw(row["裝置容量(瓩)/Installed Capacity(kW)"]))
 
-    units = json.loads((raw_dir / "units.json").read_text(encoding="utf-8-sig")).get("aaData", [])
-    if units:
-        missing = [k for k in UNIT_KEYS if k not in units[0]]
+    units = json.loads((raw_dir / "units.json").read_text(encoding="utf-8-sig")).get("aaData")
+    if not isinstance(units, list):
+        raise OfficialDataError("units.json: missing list 'aaData'")
+    for n, row in enumerate(units):
+        missing = [k for k in UNIT_KEYS if k not in row]
         if missing:
-            raise OfficialDataError(f"units.json: missing column(s): {', '.join(missing)}")
+            raise OfficialDataError(f"units.json row {n}: missing column(s): {', '.join(missing)}")
     for row in units:
         unit_type, unit_name = row["機組類型"].strip(), row["機組名稱"].strip()
         if not unit_type.startswith("民營電廠-") or unit_name == "小計":
