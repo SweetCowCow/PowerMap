@@ -21,7 +21,7 @@ The system SHALL normalize plant names by applying NFKC, replacing `臺` with `�
 | 臺中發電廠 | 台中 |
 | 核三廠 | 核三 |
 | 石門風力發電站/Shimen Wind Power Station | 石門風力 |
-| 協和電廠－珠山分廠 | 協和電廠－珠山 |
+| 協和電廠－珠山分廠 | 協和電廠-珠山 |
 | 中科E/S太陽光電發電站/Zhongke E/S Solar Power Station | 中科E/S太陽光電 |
 | 大潭 | 大潭 |
 

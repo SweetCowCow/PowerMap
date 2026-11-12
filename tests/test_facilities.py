@@ -152,6 +152,8 @@ def test_output_properties_and_nulls(tmp_path):
             assert props[key] is None, key
         assert props["energy_sources"] == [] and isinstance(props["n_generators"], int)
         assert props["missing_capacity"] is True
+        assert list(props)[-4:] == ["missing_energy", "official_id", "energy_primary", "energy_primary_source"]
+        assert props["official_id"] is None and props["energy_primary"] is None and props["energy_primary_source"] is None
     with log.open() as fh:
         assert next(csv.reader(fh)) == ["action", "kept_osm_id", "dropped_osm_id", "reason", "distance_m"]
 

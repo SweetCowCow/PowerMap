@@ -1,22 +1,35 @@
 # Taiwan power map — data pipeline
 # Usage: make data | make extract | make test | make clean
+#        make official-download | make crosswalk-candidates
 
 PY        := uv run python
 RAW       := data/raw/taiwan-latest.osm.pbf
 SEQ       := data/interim/power.geojsonseq
 SUMMARY   := data/interim/extract_summary.json
+FAC_OSM   := data/interim/facilities_osm.geojson
+DEDUP_OSM := data/interim/dedup_log_osm.csv
 FAC_META  := data/interim/facilities_meta.json
+OFFICIAL  := data/interim/official_plants.json
+ENRICH_META := data/interim/enrich_meta.json
 PLANTS    := data/processed/plants.geojson
+DEDUP_LOG := data/processed/dedup_log.csv
+UNMATCHED := data/processed/unmatched.csv
+DIFF      := data/processed/official_diff.csv
 LINES     := data/processed/lines.geojson
 STATS     := data/processed/stats.json
-DEDUP_LOG := data/processed/dedup_log.csv
+CROSSWALK := data/official/crosswalk.csv
+CANDIDATES := data/official/crosswalk_candidates.csv
 EXTRACT_OUT    := $(SEQ) $(SUMMARY)
-FACILITIES_OUT := $(PLANTS) $(DEDUP_LOG) $(FAC_META)
+FACILITIES_OUT := $(FAC_OSM) $(DEDUP_OSM) $(FAC_META)
+ENRICH_OUT     := $(PLANTS) $(DEDUP_LOG) $(UNMATCHED) $(DIFF) $(ENRICH_META)
 
 # Tunable parameters (see design.md)
-MAIN_BBOX            ?= 119.3,21.8,122.2,25.4
-ROOFTOP_THRESHOLD_MW ?= 1
-DEDUP_DISTANCE_M     ?= 500
+MAIN_BBOX               ?= 119.3,21.8,122.2,25.4
+ROOFTOP_THRESHOLD_MW    ?= 1
+DEDUP_DISTANCE_M        ?= 500
+CAPACITY_DIFF_THRESHOLD ?= 0.2
+# Official snapshot directory; default: the latest data/official/raw/<YYYY-MM-DD>
+OFFICIAL_DIR            ?= $(lastword $(sort $(wildcard data/official/raw/????-??-??)))
 
 # Parameter stamps, checked while make reads this file (before it looks at any
 # timestamps). When a value differs from the last run, the stamp is rewritten and
@@ -25,23 +38,28 @@ DEDUP_DISTANCE_M     ?= 500
 # newer) matters because make 3.81 compares whole seconds and the pipeline is fast.
 EXTRACT_PARAMS    := data/interim/extract.params
 FACILITIES_PARAMS := data/interim/facilities.params
+OFFICIAL_PARAMS   := data/interim/official.params
+ENRICH_PARAMS     := data/interim/enrich.params
 mark_stale_if_changed = $(shell mkdir -p $(dir $(1)); [ "$$(cat $(1) 2>/dev/null)" = "$(2)" ] \
 	|| { echo "$(2)" > $(1); for f in $(3); do [ -f "$$f" ] && touch -t 200001010000 "$$f"; done; })
-$(call mark_stale_if_changed,$(EXTRACT_PARAMS),MAIN_BBOX=$(MAIN_BBOX),$(EXTRACT_OUT) $(FACILITIES_OUT) $(LINES) $(STATS))
-$(call mark_stale_if_changed,$(FACILITIES_PARAMS),ROOFTOP_THRESHOLD_MW=$(ROOFTOP_THRESHOLD_MW) DEDUP_DISTANCE_M=$(DEDUP_DISTANCE_M),$(FACILITIES_OUT) $(STATS))
+$(call mark_stale_if_changed,$(EXTRACT_PARAMS),MAIN_BBOX=$(MAIN_BBOX),$(EXTRACT_OUT) $(FACILITIES_OUT) $(ENRICH_OUT) $(LINES) $(STATS))
+$(call mark_stale_if_changed,$(FACILITIES_PARAMS),ROOFTOP_THRESHOLD_MW=$(ROOFTOP_THRESHOLD_MW) DEDUP_DISTANCE_M=$(DEDUP_DISTANCE_M),$(FACILITIES_OUT) $(ENRICH_OUT) $(STATS))
+$(call mark_stale_if_changed,$(OFFICIAL_PARAMS),OFFICIAL_DIR=$(OFFICIAL_DIR),$(OFFICIAL) $(ENRICH_OUT) $(STATS))
+$(call mark_stale_if_changed,$(ENRICH_PARAMS),CAPACITY_DIFF_THRESHOLD=$(CAPACITY_DIFF_THRESHOLD),$(ENRICH_OUT) $(STATS))
 
-.PHONY: all data extract test clean
+.PHONY: all data extract test clean official-download crosswalk-candidates
 all: data
 
 data: $(STATS)
 
 extract: $(EXTRACT_OUT)
 
-# Steps with several outputs use multi-target pattern rules (stem "data"): make 3.81,
-# the macOS default, then runs the recipe once and reruns it when any output is
-# missing. Downstream steps depend on all outputs of a step for the same reason.
+# Steps with several outputs use multi-target pattern rules (stem "data" or
+# "data/interim"): make 3.81, the macOS default, then runs the recipe once and reruns
+# it when any output is missing. Downstream steps depend on all outputs of a step
+# for the same reason.
 
-# 1. Download (skipped when the snapshot already exists)
+# 1. Download the OSM snapshot (skipped when it already exists)
 $(RAW):
 	scripts/download.sh $@
 
@@ -49,17 +67,33 @@ $(RAW):
 %/interim/power.geojsonseq %/interim/extract_summary.json: $(RAW) $(EXTRACT_PARAMS) powermap/extract.py powermap/osm.py powermap/parsers.py Makefile
 	$(PY) -m powermap.extract --input $(RAW) --output $(SEQ) --summary $(SUMMARY) --main-bbox=$(MAIN_BBOX)
 
-# 3. Facilities
-%/processed/plants.geojson %/processed/dedup_log.csv %/interim/facilities_meta.json: $(EXTRACT_OUT) $(FACILITIES_PARAMS) powermap/facilities.py powermap/osm.py powermap/parsers.py powermap/geo.py Makefile
-	$(PY) -m powermap.facilities --input $(SEQ) --output $(PLANTS) --dedup-log $(DEDUP_LOG) --meta $(FAC_META) --rooftop-threshold-mw $(ROOFTOP_THRESHOLD_MW) --dedup-distance-m $(DEDUP_DISTANCE_M)
+# 3. Facilities from OSM only
+%/facilities_osm.geojson %/dedup_log_osm.csv %/facilities_meta.json: $(EXTRACT_OUT) $(FACILITIES_PARAMS) powermap/facilities.py powermap/osm.py powermap/parsers.py powermap/geo.py Makefile
+	$(PY) -m powermap.facilities --input $(SEQ) --output $(FAC_OSM) --dedup-log $(DEDUP_OSM) --meta $(FAC_META) --rooftop-threshold-mw $(ROOFTOP_THRESHOLD_MW) --dedup-distance-m $(DEDUP_DISTANCE_M)
 
-# 4. Lines
+# 4. Official plant list from the committed snapshot (no network)
+$(OFFICIAL): $(wildcard $(OFFICIAL_DIR)/*) $(OFFICIAL_PARAMS) powermap/official.py powermap/crosswalk.py powermap/parsers.py Makefile
+	$(PY) -m powermap.official normalize $(if $(OFFICIAL_DIR),--raw-dir $(OFFICIAL_DIR)) --output $(OFFICIAL)
+
+# 5. Enrich facilities with official plants through the reviewed crosswalk
+%/processed/plants.geojson %/processed/dedup_log.csv %/processed/unmatched.csv %/processed/official_diff.csv %/interim/enrich_meta.json: $(FACILITIES_OUT) $(OFFICIAL) $(wildcard $(CROSSWALK)) $(ENRICH_PARAMS) powermap/enrich.py powermap/crosswalk.py powermap/facilities.py powermap/geo.py Makefile
+	$(PY) -m powermap.enrich --facilities $(FAC_OSM) --dedup-log-osm $(DEDUP_OSM) --official $(OFFICIAL) --crosswalk $(CROSSWALK) --output $(PLANTS) --dedup-log $(DEDUP_LOG) --unmatched $(UNMATCHED) --diff $(DIFF) --meta $(ENRICH_META) --capacity-diff-threshold $(CAPACITY_DIFF_THRESHOLD)
+
+# 6. Lines
 $(LINES): $(EXTRACT_OUT) powermap/lines.py powermap/osm.py powermap/parsers.py powermap/geo.py Makefile
 	$(PY) -m powermap.lines --input $(SEQ) --output $(LINES)
 
-# 5. Stats
-$(STATS): $(EXTRACT_OUT) $(FACILITIES_OUT) $(LINES) powermap/stats.py Makefile
-	$(PY) -m powermap.stats --plants $(PLANTS) --lines $(LINES) --summary $(SUMMARY) --facilities-meta $(FAC_META) --output $(STATS)
+# 7. Stats
+$(STATS): $(EXTRACT_OUT) $(FACILITIES_OUT) $(OFFICIAL) $(ENRICH_OUT) $(LINES) powermap/stats.py Makefile
+	$(PY) -m powermap.stats --plants $(PLANTS) --lines $(LINES) --summary $(SUMMARY) --facilities-meta $(FAC_META) --official $(OFFICIAL) --dedup-log $(DEDUP_LOG) --diff $(DIFF) --unmatched $(UNMATCHED) --output $(STATS)
+
+# Official open data snapshot (network; creates data/official/raw/<date>/, commit it)
+official-download:
+	$(PY) -m powermap.official download --dest data/official/raw
+
+# Candidate pairs for reviewing data/official/crosswalk.csv by hand
+crosswalk-candidates: $(FACILITIES_OUT) $(OFFICIAL) powermap/crosswalk.py
+	$(PY) -m powermap.crosswalk --official $(OFFICIAL) --facilities $(FAC_OSM) --output $(CANDIDATES)
 
 test:
 	uv run pytest

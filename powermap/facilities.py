@@ -5,8 +5,8 @@ Implements the ``power-facility-dataset`` spec.
 Usage::
 
     python -m powermap.facilities --input data/interim/power.geojsonseq \
-        --output data/processed/plants.geojson \
-        --dedup-log data/processed/dedup_log.csv \
+        --output data/interim/facilities_osm.geojson \
+        --dedup-log data/interim/dedup_log_osm.csv \
         --meta data/interim/facilities_meta.json
 """
 
@@ -43,6 +43,9 @@ PROPERTY_KEYS = (
     "geom_src",
     "missing_capacity",
     "missing_energy",
+    "official_id",
+    "energy_primary",
+    "energy_primary_source",
 )
 DEDUP_LOG_HEADER = ("action", "kept_osm_id", "dropped_osm_id", "reason", "distance_m")
 
@@ -99,6 +102,10 @@ class Facility:
             "geom_src": self.geometry.geom_type,
             "missing_capacity": capacity is None,
             "missing_energy": energy == "unknown",
+            # Filled by powermap.enrich from the official crosswalk.
+            "official_id": None,
+            "energy_primary": None,
+            "energy_primary_source": None,
         }
 
     def to_feature(self) -> dict:
