@@ -113,7 +113,6 @@ _FUEL_MAP = {
     "地熱": "geothermal",
     "重油": "other",
     "輕柴油": "other",
-    "燃料油": "other",
 }
 
 

@@ -99,8 +99,10 @@ def test_valid_crosswalk(tmp_path):
 def test_osm_id_used_twice_rejected(tmp_path):
     path = write_crosswalk(tmp_path / "c.csv", ["tp-plant:大潭發電廠,w661662183,same,",
                                                  "tp-plant:通霄發電廠,w1;w661662183,same,"])
-    with pytest.raises(CrosswalkError, match=r"w661662183 appears on lines \[2, 3\]"):
+    with pytest.raises(CrosswalkError, match=r"w661662183 appears on lines \[2, 3\]") as exc:
         load_crosswalk(path, OFFICIAL_IDS, FACILITY_IDS)
+    assert "line 2: tp-plant:大潭發電廠,w661662183,same," in str(exc.value)
+    assert "line 3: tp-plant:通霄發電廠,w1;w661662183,same," in str(exc.value)
 
 
 def test_official_id_twice_and_bad_relation_rejected(tmp_path):

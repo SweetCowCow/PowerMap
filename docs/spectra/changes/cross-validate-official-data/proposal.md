@@ -31,7 +31,7 @@ OSM 設施資料缺值多（實測 1,584 筆中 1,354 筆沒有容量），而�
 
 ## Impact
 
-- 新增程式：powermap/official.py、powermap/crosswalk.py、powermap/enrich.py、scripts/download_official.sh
+- 新增程式：powermap/official.py、powermap/crosswalk.py、powermap/enrich.py（下載由 powermap/official.py 的 download 子命令負責）
 - 修改程式：powermap/facilities.py（輸出路徑）、powermap/stats.py、Makefile、README.md
 - 新增測試：tests/test_official.py、tests/test_crosswalk.py、tests/test_enrich.py；修改 tests/test_stats.py
 - 新增資料：data/official/（原始檔、來源清單、對照表、候選配對）；data/processed/ 新增 unmatched.csv、official_diff.csv

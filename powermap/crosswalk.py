@@ -94,6 +94,7 @@ def find_candidates(official_plants: list[dict], facilities: list[dict]) -> list
 
 CROSSWALK_HEADER = ("official_id", "osm_ids", "relation", "note")
 RELATIONS = ("same", "part", "none")
+RANK = {"exact": 0, "contains": 1, "none": 2}  # best candidate first, for the CLI summary
 
 
 class CrosswalkError(Exception):
@@ -138,8 +139,12 @@ def load_crosswalk(path: str | Path, official_ids: set[str], facility_ids: set[s
             by_osm[osm_id].append(line)
         if row["relation"].strip() not in RELATIONS:
             errors.append(f"line {line}: relation '{row['relation']}' is not one of {', '.join(RELATIONS)}")
-    errors += [f"official_id {k} appears on lines {v}" for k, v in by_official.items() if len(v) > 1]
-    errors += [f"OSM id {k} appears on lines {v}" for k, v in by_osm.items() if len(v) > 1]
+    text = {line: ",".join(row.get(c) or "" for c in CROSSWALK_HEADER) for line, row in rows}
+    for label, index in (("official_id", by_official), ("OSM id", by_osm)):
+        for key, lines in index.items():
+            if len(lines) > 1:
+                errors.append(f"{label} {key} appears on lines {lines}: "
+                              + " | ".join(f"line {n}: {text[n]}" for n in lines))
     if errors:
         raise CrosswalkError("invalid crosswalk:\n  " + "\n  ".join(errors))
 
@@ -195,8 +200,6 @@ def main(argv: list[str] | None = None) -> int:
           f"(exact {counts['exact']}, contains {counts['contains']}, none {counts['none']}) -> {output}")
     return 0
 
-
-RANK = {"exact": 0, "contains": 1, "none": 2}
 
 if __name__ == "__main__":
     sys.exit(main())
