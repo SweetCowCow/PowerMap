@@ -40,3 +40,10 @@
 - [x] 7.2 依「定位工具放在地圖上方」在 `web/lib.js` 實作 `searchFacilities` 和 `nominatimUrl`。驗證：`web/tests/lib.test.js` 涵蓋 Location tools 規格中設施比對範例表的 3 列，以及 `nominatimUrl` 含 `countrycodes=tw`、`format=jsonv2`、`limit=5`，並對中文與特殊字元做 URL 編碼；`make test-web` 通過。
 - [x] 7.3 [after: 7.1, 7.2] 實作 Location tools 的畫面：縣市下拉選單、搜尋框（輸入時列出本地設施；Enter 或「搜尋地名」按鈕才查 Nominatim，兩次查詢至少相隔 1 秒，註明文字會送到 Nominatim）、選取後移動地圖和開啟 Popup，以及失敗和沒有結果時的訊息；桌機和手機版面都可以操作。驗證：用 DevTools 選「臺東縣」後畫面移到臺東；在能源全部不勾的狀態下搜尋「嘉惠」並選取，地圖移過去並開啟 Popup；輸入「台北車站」不按 Enter 時，network 沒有 Nominatim 請求，按 Enter 後才有，選取結果後地圖移過去；搜尋「xyzxyz」顯示找不到；在 1280×800 和手機寬度各截圖檢查，console 沒有錯誤。
 - [x] 7.4 [after: 7.3] commit 並 push，確認 GitHub Pages deployment 成功，並在正式網址重做 7.1 的切換底圖檢查和 7.3 的嘉惠搜尋。驗證：`gh run list --workflow pages.yml` 最新一次成功；DevTools 在 `https://sweetcowcow.github.io/PowerMap/` 檢查通過，console 沒有錯誤。
+
+## 8. 統計區塊位置（2026-11-13 使用者回饋）
+
+> 6.2 已完成的「統計在篩選上方」依「統計區塊移到篩選下方並標示會隨篩選變動」由 8.1 調整。
+
+- [x] 8.1 依「統計區塊移到篩選下方並標示會隨篩選變動」修改 Legend and footer 的側欄順序和 Statistics panel：統計移到能源篩選之後、說明與來源之前；分成「目前顯示」（註明會隨篩選變動，數字改變時有顏色提示，reduced motion 時不播放）和「全部資料」（三個固定總數）。驗證：DevTools 確認側欄 DOM 順序為 voltage-filter、gap-toggle、energy-filter、stats、credits；勾選太陽能後設施數改變，且數字元素在 0.6 秒內帶有提示 class；1280×800 截圖確認版面；`make test-web` 通過。
+- [ ] 8.2 [after: 8.1] commit 並 push，確認 GitHub Pages deployment 成功，並在正式網址確認統計區塊位置。驗證：`gh run list --workflow pages.yml` 最新一次成功；DevTools 在 `https://sweetcowcow.github.io/PowerMap/` 確認側欄順序、console 沒有錯誤。

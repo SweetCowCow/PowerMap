@@ -271,6 +271,19 @@ function setupLocate(map, counties, plants, diff) {
   });
 }
 
+/** Update a visible count; briefly highlight it when the number changes (see .stat-num.changed). */
+function setCount(id, value) {
+  const el = document.getElementById(id);
+  const text = fmt(value);
+  if (el.textContent === text) return;
+  const first = el.textContent === "–";
+  el.textContent = text;
+  if (first) return;
+  el.classList.remove("changed");
+  void el.offsetWidth; // restart the animation
+  el.classList.add("changed");
+}
+
 function setupDrawer() {
   const panel = document.getElementById("panel");
   const handle = document.getElementById("drawer-handle");
@@ -368,8 +381,8 @@ async function main() {
       group.addLayers(perCluster.get(energy));
     }
 
-    document.getElementById("stat-facilities").textContent = fmt(visibleFacilities);
-    document.getElementById("stat-lines").textContent = fmt(visibleLines);
+    setCount("stat-facilities", visibleFacilities);
+    setCount("stat-lines", visibleLines);
     document.getElementById("drawer-summary").textContent = `顯示 ${fmt(visibleLines)} 段電力線、${fmt(visibleFacilities)} 座設施`;
   }
 

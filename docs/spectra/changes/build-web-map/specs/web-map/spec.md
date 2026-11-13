@@ -185,7 +185,12 @@ The page SHALL show the snapshot time from `stats.snapshot`, the currently visib
 
 ### Requirement: Legend and footer
 
-Filters and legend SHALL be one panel: each checkbox shows its colour or line style. The panel SHALL list, in order, the line statistics before the facility statistics, the voltage filter, the data gap toggle, and the energy filter. The legend SHALL state that symbol size does not represent capacity and line width does not represent power flow. The footer SHALL show: data © OpenStreetMap contributors under ODbL 1.0; Taipower and national county boundary data under 政府資料開放授權條款第1版; the OSM snapshot time; and a statement that the map is not a real-time supply map and that a facility's presence does not mean it is operating.
+Filters and legend SHALL be one panel: each checkbox shows its colour or line style. The panel SHALL list, in order, the voltage filter, the data gap toggle, the energy filter, and then the statistics. Within the statistics, the visible line count SHALL come before the visible facility count under a label stating that these numbers change with the filters, and the fixed totals (missing voltage, missing capacity, official plants without an OSM match) SHALL be grouped separately under a label stating that they cover all data. The legend SHALL state that symbol size does not represent capacity and line width does not represent power flow. The footer SHALL show: data © OpenStreetMap contributors under ODbL 1.0; Taipower and national county boundary data under 政府資料開放授權條款第1版; the OSM snapshot time; and a statement that the map is not a real-time supply map and that a facility's presence does not mean it is operating.
+
+#### Scenario: Statistics below the filters
+
+- **WHEN** the page loads on a desktop viewport
+- **THEN** the statistics block appears after the energy filter and before the footer, the visible counts are labelled as changing with the filters, and the three fixed totals are labelled as covering all data
 
 #### Scenario: Footer content
 

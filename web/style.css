@@ -65,7 +65,18 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 
 .intro p { margin: 0; color: var(--muted); font-size: 14px; }
 
-.stats { display: flex; flex-direction: column; gap: 2px; }
+.stats { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--panel-line); padding-top: 16px; }
+
+.stats-title { font-size: 15px; font-weight: 700; margin: 0; }
+.stats-hint { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+.stats-sub { font-size: 13px; font-weight: 700; color: var(--muted); margin: 14px 0 0; }
+
+.stat-num.changed { animation: count-changed 0.6s ease-out; }
+
+@keyframes count-changed {
+  from { color: var(--accent); }
+  to { color: var(--text); }
+}
 
 .stat { margin: 0; color: var(--muted); font-size: 14px; }
 
@@ -80,7 +91,7 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 
 .stat-of { font-variant-numeric: tabular-nums; margin-right: 4px; }
 
-.gaps { margin: 12px 0 0; display: grid; gap: 4px; font-size: 13px; }
+.gaps { margin: 4px 0 0; display: grid; gap: 4px; font-size: 13px; }
 .gaps div { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--panel-line); padding-top: 4px; }
 .gaps dt { color: var(--muted); }
 .gaps dd { margin: 0; font-variant-numeric: tabular-nums; }
@@ -406,4 +417,5 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 
 @media (prefers-reduced-motion: reduce) {
   .gap-track, .gap-track::after { transition: none; }
+  .stat-num.changed { animation: none; }
 }

@@ -31,15 +31,6 @@
           <p>OpenStreetMap 上標示的電力線與發電設施。虛線是缺電壓的線段，不是沒有線路。發電設施預設不顯示，可在下方依能源勾選。</p>
         </header>
 
-        <section class="stats" aria-label="目前顯示">
-          <p class="stat"><span class="stat-num" id="stat-lines">–</span><span class="stat-of" id="stat-lines-total"></span> 段電力線</p>
-          <p class="stat"><span class="stat-num" id="stat-facilities">–</span><span class="stat-of" id="stat-facilities-total"></span> 座發電設施</p>
-          <dl class="gaps">
-            <div><dt>缺電壓的線段</dt><dd id="stat-missing-voltage">–</dd></div>
-            <div><dt>缺容量的設施</dt><dd id="stat-missing-capacity">–</dd></div>
-            <div><dt>台電有、OSM 沒標的電廠</dt><dd id="stat-unmatched">–</dd></div>
-          </dl>
-        </section>
 
         <fieldset class="filter" id="voltage-filter">
           <legend>電力線電壓</legend>
@@ -65,6 +56,19 @@
             <li><span class="swatch swatch-generator" aria-hidden="true"></span>獨立發電機（縮小時依能源聚合，數字是支數）</li>
           </ul>
         </fieldset>
+
+        <section class="stats" aria-labelledby="stats-title">
+          <h2 class="stats-title" id="stats-title">目前顯示</h2>
+          <p class="stats-hint">數字會隨上方的電壓、資料缺口與能源開關即時變動。</p>
+          <p class="stat"><span class="stat-num" id="stat-lines" aria-live="polite">–</span><span class="stat-of" id="stat-lines-total"></span> 段電力線</p>
+          <p class="stat"><span class="stat-num" id="stat-facilities" aria-live="polite">–</span><span class="stat-of" id="stat-facilities-total"></span> 座發電設施</p>
+          <h3 class="stats-sub">全部資料（不隨篩選變動）</h3>
+          <dl class="gaps">
+            <div><dt>缺電壓的線段</dt><dd id="stat-missing-voltage">–</dd></div>
+            <div><dt>缺容量的設施</dt><dd id="stat-missing-capacity">–</dd></div>
+            <div><dt>台電有、OSM 沒標的電廠</dt><dd id="stat-unmatched">–</dd></div>
+          </dl>
+        </section>
 
         <footer class="credits">
           <p>點的大小只用來分辨電廠與發電機，不代表容量；線寬也不代表電力潮流。</p>
