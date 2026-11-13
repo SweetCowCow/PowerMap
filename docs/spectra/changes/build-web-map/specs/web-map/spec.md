@@ -39,12 +39,17 @@ The map SHALL use a `#0b1826` background and SHALL show the county outlines from
 
 ### Requirement: Location tools
 
-The page SHALL provide a county selector listing every county in `counties.geojson`; selecting one SHALL fit the map to that county's bounds. The page SHALL provide a search box that, while the user types, lists up to 8 facilities whose `name` contains the query (case-insensitive), ignoring facilities without a name; selecting a result SHALL move the map to that facility and open its popup even when the facility is hidden by the filters. When the user presses Enter or the place-search button, the page SHALL query OSM Nominatim restricted to Taiwan and list up to 5 results; selecting one SHALL fit the map to its bounding box. The page SHALL NOT send a Nominatim request while the user is typing, SHALL wait at least 1 second between Nominatim requests, and SHALL state that place-search text is sent to Nominatim. A failed or empty Nominatim search SHALL show a message in the result list and SHALL NOT move the map.
+The page SHALL provide a county selector listing every county in `counties.geojson`; selecting one SHALL fit the map to the bounds of that county's largest polygon, so far-off islands (for example 東沙島 and 太平島 in 高雄市) do not widen the view. The page SHALL provide a search box that, while the user types, lists up to 8 facilities whose `name` contains the query (case-insensitive), ignoring facilities without a name; selecting a result SHALL move the map to that facility and open its popup even when the facility is hidden by the filters. When the user presses Enter or the place-search button, the page SHALL query OSM Nominatim restricted to Taiwan and list up to 5 results; selecting one SHALL fit the map to its bounding box. The page SHALL NOT send a Nominatim request while the user is typing, SHALL wait at least 1 second between Nominatim requests, and SHALL state that place-search text is sent to Nominatim. A failed or empty Nominatim search SHALL show a message in the result list and SHALL NOT move the map.
 
 #### Scenario: Jump to a county
 
 - **WHEN** the user selects 臺東縣 in the county selector
-- **THEN** the map view fits the bounds of the 臺東縣 feature
+- **THEN** the map view fits the bounds of the largest polygon of 臺東縣 (the main-island part)
+
+#### Scenario: Far-off islands ignored
+
+- **WHEN** the user selects 高雄市
+- **THEN** the map view covers the main-island part of 高雄市 and does not extend to 東沙島 or 太平島
 
 #### Scenario: Facility name search
 
@@ -154,7 +159,7 @@ The page SHALL offer a 只看資料缺口 toggle, off by default. When on, a fac
 
 ### Requirement: Facility and line popups
 
-Clicking a facility SHALL open a popup with name, kind, energy, capacity, capacity source, operator and an OSM link; plants SHALL also show `n_generators`, and `energy_primary` SHALL be shown only when not null. A null name SHALL display 未命名; a null capacity or operator SHALL display 未填. `capacity_source` `osm` SHALL display OSM and `taipower` SHALL display 台電官方補值. When the facility's `osm_id` appears in `official_diff.csv`, the popup SHALL show the official capacity and the difference percentage. Clicking a line SHALL open a popup with kind, maximum voltage (未填 when null), `voltage_raw`, `location` when not null, and an OSM link. All text from the data SHALL be HTML-escaped. A popup SHALL NOT display the literal text `null` or `undefined`.
+Clicking a facility SHALL open a popup with name, kind, energy, capacity, capacity source (only when capacity is not null), operator and an OSM link; plants SHALL also show `n_generators`, and `energy_primary` SHALL be shown only when not null. A null name SHALL display 未命名; a null capacity or operator SHALL display 未填. `capacity_source` `osm` SHALL display OSM and `taipower` SHALL display 台電官方補值. When the facility's `osm_id` appears in `official_diff.csv`, the popup SHALL show the official capacity and the difference percentage. Clicking a line SHALL open a popup with kind, maximum voltage (未填 when null), `voltage_raw`, `location` when not null, and an OSM link. All text from the data SHALL be HTML-escaped. A popup SHALL NOT display the literal text `null` or `undefined`.
 
 #### Scenario: Missing values in popup
 

@@ -135,7 +135,7 @@ change 1、2 已經產出網頁要用的資料，以下是 2026-11-13 實測的�
 
 地圖左上角（縮放鈕右側）放一個定位列，手機版放在畫面頂端，包含：
 
-- **縣市快速切換**：下拉選單列出 `counties.geojson` 的 19 個縣市，選取後 `fitBounds` 到該縣市範圍。不需要外部服務。
+- **縣市快速切換**：下拉選單由北到南列出 `counties.geojson` 的 19 個縣市，選取後 `fitBounds` 到該縣市**面積最大的多邊形**（`lib.js` 的 `mainPolygonBounds`），跳轉後選單回到「切換縣市」。只用最大的多邊形，是因為高雄市包含東沙島和太平島，用整個縣市範圍會把地圖拉到南海；代價是臺東縣跳轉時不含綠島和蘭嶼。不需要外部服務。
 - **搜尋框**：輸入時，即時比對本地設施的 `name`（不分大小寫，包含即算），列出最多 8 筆電廠或發電機，只顯示有名稱的。選取後地圖移到該設施（zoom 15），並在該點開啟 Popup。即使該設施因能源篩選而隱藏，也會用獨立的 `L.popup` 顯示，並畫一個暫時的高亮圓圈。
 - **地名或地址搜尋**：按 Enter 或「搜尋地名」按鈕時，才向 OSM Nominatim 查詢（`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=tw&accept-language=zh-TW&limit=5&q=...`），列出最多 5 筆結果，選取後 `fitBounds` 到結果的 `boundingbox`。
   - 依 Nominatim 使用政策，不做邊打字邊查詢，兩次查詢至少相隔 1 秒，並標示「地名搜尋：© OpenStreetMap contributors（Nominatim）」。
@@ -152,7 +152,7 @@ change 1、2 已經產出網頁要用的資料，以下是 2026-11-13 實測的�
 
 ### 網頁單元測試用 node --test
 
-新增 `web/tests/lib.test.js`，用 Node 內建的 `node:test` 和 `node:assert`，不需要 `package.json` 和任何 npm 套件。`make test-web` 執行 `node --test web/tests/`。`make test` 維持只跑 pytest，CI 另外執行 `make test-web`。
+新增 `web/tests/lib.test.js`，用 Node 內建的 `node:test` 和 `node:assert`，不需要 `package.json` 和任何 npm 套件。`make test-web` 執行 `node --test web/tests/*.test.js`（新版 Node 把參數當成檔案樣式，直接寫目錄不穩定）。`make test` 維持只跑 pytest，CI 另外執行 `make test-web`。
 
 ### GitHub Actions 發佈到 Pages
 
