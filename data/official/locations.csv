@@ -1,0 +1,31 @@
+official_id,lat,lon,precision,method,source,checked_at,note
+tp-plant:高屏發電廠,22.86918,120.58693,site,nominatim,https://www.openstreetmap.org/relation/9466131,2026-11-13,OSM「高屏發電廠竹門機組」（竹門25號，官方地址竹門20號）
+tp-plant:龍門廠,25.04275,121.92253,site,nominatim,https://www.openstreetmap.org/relation/13334248,2026-11-13,OSM「龍門核能發電廠(廢棄)」，地址 62 號相符
+tp-re:中大D/S太陽光電發電站,24.97120,121.20691,village,nominatim,"Nominatim「三民里, 中壢區, 桃園市」",2026-11-13,門牌查不到，取三民里中心
+tp-re:中科E/S太陽光電發電站,24.20055,120.60699,site,manual,https://www.openstreetmap.org/way/504920947,2026-11-13,OSM「中科超高壓變電所(E/S)」
+tp-re:中部儲運中心太陽光電發電站,24.32381,120.72495,road,nominatim,Nominatim「九甲七路」,2026-11-13,九甲七路位於后里里的路段
+tp-re:北部儲運中心太陽光電發電站,25.02717,121.06035,site,nominatim,https://www.openstreetmap.org/way/696280473,2026-11-13,OSM「台電北部儲運中心」
+tp-re:卓蘭會館太陽光電發電站,24.31058,120.81925,village,nominatim,"Nominatim「新厝里, 卓蘭鎮, 苗栗縣」",2026-11-13,門牌查不到，取新厝里中心
+tp-re:南投大彎太陽光電發電站,23.82862,120.86281,village,nominatim,Nominatim「大彎 水里」,2026-11-13,地址只有地號；取水里鄉車埕村聚落「大彎」
+tp-re:台中電廠風力發電站,24.21577,120.48162,site,manual,https://www.openstreetmap.org/way/200691649,2026-11-13,地址龍昌路1號即台中發電廠，取 OSM「台中火力發電廠」位置
+tp-re:台北再生辦太陽光電發電站,25.01054,121.53484,road,nominatim,Nominatim「汀州路三段230巷」,2026-11-13,水源里汀州路三段230巷
+tp-re:后里E/S太陽光電發電站,24.31765,120.74062,site,manual,https://www.openstreetmap.org/way/192391806,2026-11-13,OSM「后里超高壓變電所(E/S)」，在仁里里
+tp-re:嘉義民雄太陽光電發電站,23.52771,120.45960,village,nominatim,"Nominatim「北斗村, 民雄鄉, 嘉義縣」",2026-11-13,門牌查不到，取北斗村中心
+tp-re:大湳淨水場太陽光電發電站,24.97271,121.28787,road,nominatim,Nominatim「國際路一段485巷」,2026-11-13,國際路一段485巷
+tp-re:大潭電廠太陽光電發電站,25.02618,121.04696,site,manual,https://www.openstreetmap.org/relation/18726493,2026-11-13,OSM「台電大潭發電廠」
+tp-re:大潭風力發電站,25.03115,121.05752,village,nominatim,"Nominatim「大潭里, 觀音區, 桃園市」",2026-11-13,地址為大潭里、保生里，取大潭里中心
+tp-re:彰林E/S太陽光電發電站,23.92857,120.45497,site,manual,https://www.openstreetmap.org/way/397475997,2026-11-13,OSM「彰林超高壓變電所(E/S)」
+tp-re:恆春風力發電站,21.97080,120.76910,village,nominatim,"Nominatim「南灣里, 恆春鎮, 屏東縣」",2026-11-13,取南灣里中心
+tp-re:東勢新伯公太陽光電發電站,24.22082,120.84081,road,nominatim,"Nominatim「新城街, 東勢區」",2026-11-13,新城街路段（地名「新伯公」在其西北約 1.2 公里）
+tp-re:東興淨水場太陽光電發電站,24.66943,120.91973,site,nominatim,https://www.openstreetmap.org/way/990293755,2026-11-13,OSM「東興淨水場」
+tp-re:燕巢倉庫太陽光電發電站,22.77495,120.38639,road,nominatim,Nominatim「臥牛巷」,2026-11-13,深水里臥牛巷
+tp-re:竹工E/S太陽光電發電站,24.81719,121.19443,address,nominatim,Nominatim「新竹縣關西鎮仁安里台電新村66之3號」,2026-11-13,門牌命中；此處 OSM 標為「龍潭超高壓變電所」，官方名稱和地址可能與龍潭E/S 對調
+tp-re:義竹工作站太陽光電發電站,23.36273,120.28056,village,nominatim,"Nominatim「中平村, 義竹鄉, 嘉義縣」",2026-11-13,取中平村中心
+tp-re:興達電廠太陽光電發電站,22.85457,120.19687,site,manual,https://www.openstreetmap.org/way/226576525,2026-11-13,OSM「興達發電廠」
+tp-re:蘭嶼貯存場太陽光電發電站,22.00502,121.59218,site,nominatim,https://www.openstreetmap.org/way/178446519,2026-11-13,OSM「蘭嶼貯存場」，地址紅頭村1號相符
+tp-re:蘭嶼電廠太陽光電發電站,22.02633,121.53955,site,manual,https://www.openstreetmap.org/way/517137824,2026-11-13,OSM「蘭嶼發電廠」
+tp-re:路北E/S太陽光電發電站,22.83707,120.24749,site,manual,https://www.openstreetmap.org/way/504977455,2026-11-13,OSM「路北超高壓變電所」，在後鄉里
+tp-re:高訓中心太陽光電發電站,22.58897,120.42280,road,nominatim,"Nominatim「華西路, 大寮區」",2026-11-13,華西路（大發產業園區）北段，兩段相距約 1 公里
+tp-re:高雄E/S太陽光電發電站,22.64677,120.29322,site,manual,https://www.openstreetmap.org/way/220090271,2026-11-13,OSM「高雄超高壓變電所」，在安邦里
+tp-re:高雄保寧太陽光電發電站,22.83032,120.23638,village,nominatim,"Nominatim「保寧里, 永安區, 高雄市」",2026-11-13,取保寧里中心
+tp-re:龍潭E/S太陽光電發電站,24.89297,121.09437,site,manual,https://www.openstreetmap.org/way/380946795,2026-11-13,地址湖口八德路三段在此；OSM 標為「竹工超高壓變電所」，官方名稱和地址可能與竹工E/S 對調

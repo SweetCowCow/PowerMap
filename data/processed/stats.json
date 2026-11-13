@@ -1,13 +1,13 @@
 {
   "snapshot": "2026-11-11T21:22:47Z",
-  "built_at": "2026-11-13T03:33:01Z",
-  "facilities": 1577,
+  "built_at": "2026-11-13T06:24:15Z",
+  "facilities": 1570,
   "lines": 2515,
   "lines_missing_voltage": 1059,
-  "facilities_missing_capacity": 1343,
+  "facilities_missing_capacity": 1342,
   "by_energy": {
     "solar": 1033,
-    "wind": 414,
+    "wind": 407,
     "hydro": 53,
     "gas": 11,
     "coal": 10,
@@ -19,7 +19,7 @@
   },
   "by_energy_source": {
     "solar": 1034,
-    "wind": 415,
+    "wind": 408,
     "hydro": 53,
     "gas": 13,
     "coal": 12,
@@ -54,13 +54,13 @@
     "source_dir": "data/official/raw/2026-11-12",
     "plants": 86,
     "excluded_outside_main_island": 13,
-    "linked": 39,
-    "facilities_with_official_id": 62,
-    "capacity_filled": 6,
-    "merged": 7,
+    "linked": 50,
+    "facilities_with_official_id": 169,
+    "capacity_filled": 7,
+    "merged": 14,
     "capacity_discrepancies": 6,
     "unmatched": {
-      "no_osm": 47,
+      "no_osm": 36,
       "unreviewed": 0,
       "osm_missing": 0
     }
