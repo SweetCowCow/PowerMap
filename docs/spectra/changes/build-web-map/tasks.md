@@ -32,4 +32,4 @@
 
 - [x] 6.1 依「外部圖磚改用 OSM 標準圖磚並以 CSS 調暗」修改 Base layers：移除 CARTO 圖層，改成「OSM 圖磚（調暗）」（`tile.openstreetmap.org`，CSS filter 只套在這個圖磚圖層上），並把 README 和頁面中提到 CARTO 的地方改成 OSM 圖磚。驗證：用 Chrome DevTools 確認預設狀態下沒有請求 `tile.openstreetmap.org` 和 `cartocdn`；切換到 OSM 圖磚後有載入圖磚、截圖確認畫面偏暗且設施和線段顏色不變、attribution 顯示 © OpenStreetMap contributors；`git grep -i carto -- web README.md` 沒有結果。
 - [x] 6.2 依「側欄以電力線為主，能源預設不勾」修改 Energy filter 的預設值和 Legend and footer 的側欄順序：統計電力線在前、電壓篩選 → 只看資料缺口 → 能源篩選，能源預設全部不勾，手機抽屜摘要電力線在前。驗證：DevTools 載入頁面後設施數為 0、線段數為 2,515；按能源的「全選」後設施數為 1,577；側欄 DOM 順序依序為電壓、資料缺口、能源；`make test-web` 通過。
-- [ ] 6.3 [after: 6.1, 6.2] commit 並 push，確認 GitHub Pages deployment 成功。驗證：`gh run list --workflow pages.yml` 最新一次成功，用 DevTools 開啟 `https://sweetcowcow.github.io/PowerMap/`，初始畫面只有電力線、console 沒有錯誤。
+- [x] 6.3 [after: 6.1, 6.2] commit 並 push，確認 GitHub Pages deployment 成功。驗證：`gh run list --workflow pages.yml` 最新一次成功，用 DevTools 開啟 `https://sweetcowcow.github.io/PowerMap/`，初始畫面只有電力線、console 沒有錯誤。
