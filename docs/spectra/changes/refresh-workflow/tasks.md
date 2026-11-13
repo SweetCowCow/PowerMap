@@ -9,4 +9,4 @@
 ## 3. 指令與文件
 
 - [x] 3.1 [after: 1.1, 2.1] 依「make refresh 的步驟」實作 Refresh command：Makefile 新增 `refresh`（OSM 先下載到 `.new` 再取代、台電資料 `--reuse-existing`、`make data`、產生報告）。驗證：用不存在的 `SNAPSHOT_URL` 執行 `make refresh` 時非 0 退出且 `data/raw/taiwan-latest.osm.pbf` 的修改時間不變。
-- [ ] 3.2 [after: 3.1] README 寫明每月更新步驟與報告各項目的處理方式；實際執行一次 `make refresh`，把報告摘要給使用者看，由使用者決定是否 commit 新資料。驗證：`data/interim/refresh_report.md` 存在，報告中 `unreviewed` 的筆數等於 `unmatched.csv` 中的筆數；`uv run pytest` 通過。
+- [x] 3.2 [after: 3.1] README 寫明每月更新步驟與報告各項目的處理方式；實際執行一次 `make refresh`，把報告摘要給使用者看，由使用者決定是否 commit 新資料。驗證：`data/interim/refresh_report.md` 存在，報告中 `unreviewed` 的筆數等於 `unmatched.csv` 中的筆數；`uv run pytest` 通過。
