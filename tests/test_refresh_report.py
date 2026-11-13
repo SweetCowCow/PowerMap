@@ -146,3 +146,30 @@ def test_load_current_reads_tables(tmp_path):
     assert "linked to OSM" in cur["location_warnings"][0]
     assert [r["official_id"] for r in cur["status_rows"]] == ["tp-plant:核一廠"]
     assert cur["stats"] == {} and cur["unmatched"] == []
+
+
+@needs_git
+def test_main_writes_report_and_exits_zero(tmp_path, capsys):
+    git(tmp_path, "init", "-q")
+    write(tmp_path, "data/processed/stats.json", json.dumps(stats(facilities=1500)))
+    git(tmp_path, "add", "-A")
+    git(tmp_path, "commit", "-q", "-m", "base")
+    write(tmp_path, "data/processed/stats.json", json.dumps(stats(facilities=1510)))
+    write(tmp_path, "data/processed/unmatched.csv",
+          "official_id,name,county,capacity_mw,reason\nipp:新電廠,新電廠,,1,unreviewed\n")
+    output = tmp_path / "out" / "report.md"
+    assert main(["--output", str(output), "--root", str(tmp_path)]) == 0
+    text = output.read_text(encoding="utf-8")
+    assert "| 設施 | 1,500 → 1,510 (+10) |" in text
+    assert text.rstrip().endswith("待處理 1 項")
+    assert "待處理 1 項" in capsys.readouterr().out
+
+
+def test_load_current_reports_invalid_status_table(tmp_path):
+    write(tmp_path, "data/interim/official_plants.json", json.dumps({"plants": [{"official_id": "tp-plant:核一廠"}]}))
+    write(tmp_path, "data/official/status.csv",
+          "official_id,status,since,units,source,checked_at,note\n"
+          "tp-plant:核一廠,closed,2019-07,,https://example.org,2026-11-13,\n")
+    cur = load_current(tmp_path)
+    assert len(cur["status_warnings"]) == 1 and "status 'closed'" in cur["status_warnings"][0]
+    assert cur["status_rows"] == []

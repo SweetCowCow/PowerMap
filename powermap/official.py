@@ -63,6 +63,11 @@ class OfficialDataError(Exception):
 # --- Download -------------------------------------------------------------------
 
 
+def snapshot_dir(dest_root: str | Path, now: datetime | None = None) -> Path:
+    """``dest_root/<YYYY-MM-DD>`` for the UTC date of ``now`` (default: the current time)."""
+    return Path(dest_root) / (now or datetime.now(timezone.utc)).strftime("%Y-%m-%d")
+
+
 def download(dest_root: str | Path, datasets: tuple[Dataset, ...] = DATASETS, now: datetime | None = None,
              reuse_existing: bool = False) -> Path:
     """Download all datasets into ``dest_root/<YYYY-MM-DD>/``; all-or-nothing.
@@ -72,7 +77,7 @@ def download(dest_root: str | Path, datasets: tuple[Dataset, ...] = DATASETS, no
     """
     now = now or datetime.now(timezone.utc)
     dest_root = Path(dest_root)
-    target = dest_root / now.strftime("%Y-%m-%d")
+    target = snapshot_dir(dest_root, now)
     if target.exists():
         if reuse_existing:
             return target
@@ -285,11 +290,11 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.command == "download":
-            today = Path(args.dest) / datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            if args.reuse_existing and today.exists():
-                print(f"Reusing existing snapshot {today}")
+            now = datetime.now(timezone.utc)
+            if args.reuse_existing and snapshot_dir(args.dest, now).exists():
+                print(f"Reusing existing snapshot {snapshot_dir(args.dest, now)}")
                 return 0
-            target = download(args.dest)
+            target = download(args.dest, now=now)
             for entry in json.loads((target / "manifest.json").read_text(encoding="utf-8"))["files"]:
                 print(f"{entry['file']:<18} {entry['bytes']:>8} bytes  sha256 {entry['sha256'][:16]}…")
             print(f"Saved {target}")

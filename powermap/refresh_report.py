@@ -119,10 +119,11 @@ def build_report(base: dict, current: dict, today: date) -> tuple[str, int]:
 def git_show(ref: str, path: str, cwd: str | Path = ".") -> str:
     """File content at ``ref``; empty string when the file does not exist there."""
     check = subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
-                           cwd=cwd, capture_output=True, text=True)
+                           cwd=cwd, capture_output=True, text=True, encoding="utf-8")
     if check.returncode != 0:
         raise ReportError(f"git ref '{ref}' cannot be read (not a commit, or not a git repository)")
-    shown = subprocess.run(["git", "show", f"{ref}:{path}"], cwd=cwd, capture_output=True, text=True)
+    shown = subprocess.run(["git", "show", f"{ref}:{path}"], cwd=cwd, capture_output=True, text=True,
+                           encoding="utf-8")
     return shown.stdout if shown.returncode == 0 else ""
 
 

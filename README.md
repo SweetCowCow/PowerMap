@@ -160,7 +160,7 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 | 狀態表查證日期超過一年 | 重新查公開資料，更新 `status.csv` 的內容和 `checked_at` |
 | 新的容量差距 | 檢查是 OSM 還是官方資料的問題（例如機組除役），必要時更新狀態表 |
 
-4. 處理完再跑一次 `make data`，確認報告是 `待處理 0 項`（可用 `uv run python -m powermap.refresh_report --output data/interim/refresh_report.md` 只重產報告），然後 commit `data/official/` 與 `data/processed/`，push 後由 GitHub Actions 部署。
+4. 處理完再跑一次 `make data`，確認報告中除了已確認的「新的容量差距」之外沒有其他項目（容量差距是和上次 commit 比較，commit 之後才會從報告消失；可用 `uv run python -m powermap.refresh_report --output data/interim/refresh_report.md` 只重產報告），然後 commit `data/official/` 與 `data/processed/`，push 後由 GitHub Actions 部署。
 
 ## 資料原則
 

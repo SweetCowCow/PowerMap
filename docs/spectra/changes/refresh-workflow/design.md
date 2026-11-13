@@ -35,7 +35,7 @@ OSM 先下載到 `.new`，失敗時舊快照還在，`make data` 仍可用。任
 
 ### 下載指令新增 --reuse-existing
 
-`download --reuse-existing`：當天目錄已存在時印出「沿用 <目錄>」並成功結束；沒有這個參數時維持原本的拒絕覆寫行為。`make official-download` 不變。
+`download --reuse-existing`：當天目錄已存在時印出 `Reusing existing snapshot <目錄>`（和這個 CLI 其他訊息一樣用英文）並成功結束；日期目錄由 `snapshot_dir()` 計算，命令列和 `download()` 共用；沒有這個參數時維持原本的拒絕覆寫行為。`make official-download` 不變。
 
 ### 變動報告和 git HEAD 比較
 
@@ -50,7 +50,7 @@ OSM 先下載到 `.new`，失敗時舊快照還在，`make data` 仍可用。任
    - 位置表被忽略的列（用 `load_locations` 重新檢查）
    - 狀態表被忽略的列，以及 `checked_at` 距今超過 365 天的列
    - `official_diff.csv` 中上次沒有的新容量差距
-4. 最後一行：`待處理 N 項`。
+4. 最後一行：`待處理 N 項`。新的容量差距是和 base 比較，確認後要 commit 才會消失，所以 README 寫明「除了已確認的容量差距之外為 0」即可 commit。
 
 報告同時印在終端並寫入 `--output`；即使有待處理項目也以 0 結束（只有讀檔或 git 失敗才非 0）。替代方案是在 `make refresh` 前先複製一份舊輸出，但 git 已經保存了上次的版本，不需要另存。
 
@@ -68,7 +68,7 @@ OSM 先下載到 `.new`，失敗時舊快照還在，`make data` 仍可用。任
 
 **資料形狀**
 
-- `refresh_report.md` 依上述 4 段排列；`build_report(base, current, today)` 回傳 Markdown 字串，方便測試。
+- `refresh_report.md` 依上述 4 段排列；`build_report(base, current, today)` 回傳 `(Markdown 字串, 待處理件數)`，方便測試。
 
 **失敗模式**
 
@@ -79,6 +79,7 @@ OSM 先下載到 `.new`，失敗時舊快照還在，`make data` 仍可用。任
 
 - `tests/test_refresh_report.py` 涵蓋：數量變化的差值、各類待處理項目各至少一例、沒有待處理時顯示 `待處理 0 項`、base 缺檔視為空、狀態表超過 365 天的判斷（以固定的 today 測試）。
 - `tests/test_official.py` 涵蓋 `--reuse-existing` 沿用既有目錄、沒有參數時仍拒絕。
+- `tests/test_make_refresh.py` 以暫存的快照路徑和不存在的 `SNAPSHOT_URL` 執行 `make refresh`，確認非 0 退出、舊快照內容與修改時間不變、沒有殘留暫存檔。
 - `uv run pytest` 通過；在本機實際執行一次 `make refresh`，報告內容和輸出檔一致。
 
 **範圍**
