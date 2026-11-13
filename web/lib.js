@@ -160,12 +160,42 @@ function osmLink(url) {
   return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">在 OpenStreetMap 查看</a>`;
 }
 
+// --- Operating status (data/official/status.csv, reviewed by hand) ---------------------
+
+/** Symbol colour for plants that no longer generate (retired or mothballed). */
+export const INACTIVE_COLOR = "#5c6773";
+
+export const STATUS_LABELS = {
+  retired: "已停止運轉",
+  mothballed: "封存",
+  partially_retired: "部分機組已除役",
+};
+
+/** True when the whole plant no longer generates: retired or mothballed. */
+export function statusInactive(status) {
+  return status?.status === "retired" || status?.status === "mothballed";
+}
+
+/** Popup rows for an operating status entry of official_status.json; empty without one. */
+export function statusRowsHtml(status) {
+  if (!status) return [];
+  const label = STATUS_LABELS[status.status] ?? status.status ?? MISSING;
+  const rows = [row("運轉狀態", escapeHtml(status.since ? `${label}（${status.since}）` : label))];
+  if (status.units) rows.push(row("機組", escapeHtml(status.units)));
+  if (typeof status.source === "string" && /^https?:\/\//.test(status.source)) {
+    const checked = status.checked_at ? `（查證 ${status.checked_at}）` : "";
+    rows.push(row("狀態來源", `<a href="${escapeHtml(status.source)}" target="_blank" rel="noopener">公開資料</a>${escapeHtml(checked)}`));
+  }
+  return rows;
+}
+
 /**
  * Popup HTML for a facility.
  * @param {object} props facility properties
  * @param {{official_capacity_mw: number, diff_ratio: number} | undefined} diff row from official_diff.csv
+ * @param {object | undefined} status entry of official_status.json for `props.official_id`
  */
-export function facilityPopupHtml(props, diff) {
+export function facilityPopupHtml(props, diff, status) {
   const name = props.name ?? "未命名";
   const rows = [
     row("種類", escapeHtml(KIND_LABELS[props.kind] ?? props.kind ?? MISSING)),
@@ -182,6 +212,7 @@ export function facilityPopupHtml(props, diff) {
   if (props.energy_primary) {
     rows.push(row("官方主要能源", escapeHtml(ENERGY_LABELS[props.energy_primary] ?? props.energy_primary)));
   }
+  rows.push(...statusRowsHtml(status));
   rows.push(row("營運者", escapeHtml(props.operator ?? MISSING)));
   if (props.kind === "plant") {
     rows.push(row("內含發電機", escapeHtml(`${props.n_generators ?? 0} 支`)));
@@ -282,6 +313,7 @@ export const REQUIRED_FILES = [
   "lines.geojson",
   "substations.geojson",
   "official_points.geojson",
+  "official_status.json",
   "stats.json",
   "counties.geojson",
 ];
@@ -328,18 +360,20 @@ export const GENERATOR_RADIUS = 3;
 
 /**
  * Symbol for a facility. Radius only tells plant from generator; it never depends on capacity.
+ * A retired or mothballed plant (`status`) is drawn in INACTIVE_COLOR instead of its energy colour.
  * @returns {{shape: "circle"|"diamond", radius: number, fillColor: string, color: string, weight: number, dashArray: string|null}}
  */
-export function facilityStyle(props) {
+export function facilityStyle(props, status) {
   const radius = props.kind === "plant" ? PLANT_RADIUS : GENERATOR_RADIUS;
+  const inactive = statusInactive(status);
   if (props.energy === "nuclear") {
-    return { shape: "diamond", radius, fillColor: "none", color: "#ffffff", weight: 2, dashArray: null };
+    return { shape: "diamond", radius, fillColor: "none", color: inactive ? INACTIVE_COLOR : "#ffffff", weight: 2, dashArray: null };
   }
   const mixed = props.energy === "mixed";
   return {
     shape: "circle",
     radius,
-    fillColor: ENERGY_COLORS[props.energy] ?? ENERGY_COLORS.unknown,
+    fillColor: inactive ? INACTIVE_COLOR : ENERGY_COLORS[props.energy] ?? ENERGY_COLORS.unknown,
     color: mixed ? "#ffffff" : "#0b1826",
     weight: mixed ? 1.5 : 0.8,
     dashArray: mixed ? "2 2" : null,
@@ -367,10 +401,10 @@ export const PRECISION_LABELS = {
  * Hollow dashed circle, so an estimate never looks like a filled OSM facility symbol. Radius 9 is
  * wider than a plant dot (5) and a substation square (10 px), leaving a ring to click.
  */
-export function officialPointStyle(props) {
+export function officialPointStyle(props, status) {
   return {
     radius: 9,
-    color: ENERGY_COLORS[props.energy_primary] ?? ENERGY_COLORS.unknown,
+    color: statusInactive(status) ? INACTIVE_COLOR : ENERGY_COLORS[props.energy_primary] ?? ENERGY_COLORS.unknown,
     weight: 2,
     dashArray: "3 3",
     fill: false,
@@ -387,7 +421,7 @@ export function officialPointVisible(props, filters) {
 }
 
 /** Popup HTML for an official point; it always says the position is an estimate. */
-export function officialPointPopupHtml(props) {
+export function officialPointPopupHtml(props, status) {
   const energy = props.energy_primary ? ENERGY_LABELS[props.energy_primary] ?? props.energy_primary : MISSING;
   const rows = [
     row("容量", escapeHtml(formatCapacity(props.capacity_mw))),
@@ -395,6 +429,7 @@ export function officialPointPopupHtml(props) {
     row("地址", escapeHtml(props.address ?? MISSING)),
     row("精確程度", escapeHtml(PRECISION_LABELS[props.precision] ?? props.precision ?? MISSING)),
     row("查詢日期", escapeHtml(props.checked_at ?? MISSING)),
+    ...statusRowsHtml(status),
   ];
   return `<div class="popup"><h3>${escapeHtml(props.name ?? "未命名")}</h3>`
     + '<p class="popup-note">台電資料・位置為依地址估計，不是 OSM 資料</p>'

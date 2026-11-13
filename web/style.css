@@ -189,6 +189,7 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 .swatch-mixed { --swatch: #b98ad9; border: 2px dashed #fff; }
 .swatch-plant { --swatch: #8ea3b5; width: 12px; height: 12px; margin: 0 1px; }
 .swatch-generator { --swatch: #8ea3b5; width: 7px; height: 7px; margin: 0 3.5px; }
+.swatch-inactive { --swatch: #5c6773; width: 12px; height: 12px; margin: 0 1px; }
 
 /* Official estimated locations: hollow dashed circle, never filled like an OSM facility. */
 .official-option { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--panel-line); }

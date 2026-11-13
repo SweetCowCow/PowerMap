@@ -51,8 +51,8 @@ async function loadData() {
   ]);
   const failed = failedFiles(REQUIRED_FILES, required);
   if (failed.length) return { failed };
-  const [plants, lines, substations, officialPoints, stats, counties] = required.map((r) => r.value);
-  return { plants, lines, substations, officialPoints, stats, counties, diff, failed: [] };
+  const [plants, lines, substations, officialPoints, officialStatus, stats, counties] = required.map((r) => r.value);
+  return { plants, lines, substations, officialPoints, officialStatus, stats, counties, diff, failed: [] };
 }
 
 function showBanner(message) {
@@ -105,21 +105,21 @@ function baseLayers(map, counties) {
   }, null, { position: "topright" }).addTo(map);
 }
 
-function nuclearIcon() {
+function nuclearIcon(color) {
   return L.divIcon({
     className: "nuclear-icon",
     iconSize: [14, 14],
     html: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">'
-      + '<rect x="3" y="3" width="8" height="8" transform="rotate(45 7 7)" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+      + `<rect x="3" y="3" width="8" height="8" transform="rotate(45 7 7)" fill="none" stroke="${color}" stroke-width="2"/></svg>`,
   });
 }
 
-function facilityLayer(feature, renderer, diff) {
+function facilityLayer(feature, renderer, diff, status) {
   const p = feature.properties;
   const [lon, lat] = feature.geometry.coordinates;
-  const style = facilityStyle(p);
+  const style = facilityStyle(p, status);
   const layer = style.shape === "diamond"
-    ? L.marker([lat, lon], { icon: nuclearIcon(), pane: "markerPane", keyboard: false })
+    ? L.marker([lat, lon], { icon: nuclearIcon(style.color), pane: "markerPane", keyboard: false })
     : L.circleMarker([lat, lon], {
       renderer,
       radius: style.radius,
@@ -129,7 +129,7 @@ function facilityLayer(feature, renderer, diff) {
       fillColor: style.fillColor,
       fillOpacity: 0.95,
     });
-  layer.bindPopup(() => facilityPopupHtml(p, diff.get(p.osm_id)), { maxWidth: 320 });
+  layer.bindPopup(() => facilityPopupHtml(p, diff.get(p.osm_id), status), { maxWidth: 320 });
   return layer;
 }
 
@@ -184,15 +184,15 @@ function checkedValues(list) {
 
 const NOMINATIM_INTERVAL_MS = 1000;
 
-function officialPointLayer(feature, renderer) {
+function officialPointLayer(feature, renderer, status) {
   const [lon, lat] = feature.geometry.coordinates;
-  const layer = L.circleMarker([lat, lon], { renderer, ...officialPointStyle(feature.properties) });
-  layer.bindPopup(() => officialPointPopupHtml(feature.properties), { maxWidth: 320 });
+  const layer = L.circleMarker([lat, lon], { renderer, ...officialPointStyle(feature.properties, status) });
+  layer.bindPopup(() => officialPointPopupHtml(feature.properties, status), { maxWidth: 320 });
   return layer;
 }
 
 /** County selector, facility-name search (local, as you type) and place search (Nominatim, on submit). */
-function setupLocate(map, counties, plants, substations, officialPoints, diff) {
+function setupLocate(map, counties, plants, substations, officialPoints, diff, statusOf) {
   const root = document.getElementById("locate");
   L.DomEvent.disableClickPropagation(root);
   L.DomEvent.disableScrollPropagation(root);
@@ -322,13 +322,13 @@ function setupLocate(map, counties, plants, substations, officialPoints, diff) {
     if (!button) return;
     if (button.dataset.facility !== undefined) {
       const f = facilityHits[Number(button.dataset.facility)];
-      openFound(f, facilityPopupHtml(f.properties, diff.get(f.properties.osm_id)));
+      openFound(f, facilityPopupHtml(f.properties, diff.get(f.properties.osm_id), statusOf(f.properties.official_id)));
     } else if (button.dataset.substation !== undefined) {
       const f = substationHits[Number(button.dataset.substation)];
       openFound(f, substationPopupHtml(f.properties));
     } else if (button.dataset.official !== undefined) {
       const f = officialHits[Number(button.dataset.official)];
-      openFound(f, officialPointPopupHtml(f.properties));
+      openFound(f, officialPointPopupHtml(f.properties, statusOf(f.properties.official_id)));
     } else if (button.dataset.place !== undefined) {
       const p = placeHits[Number(button.dataset.place)];
       const [s, n, w, e] = p.boundingbox.map(Number);
@@ -371,8 +371,10 @@ async function main() {
     showBanner(`無法載入資料檔：${data.failed.join("、")}。請確認已執行 make web，再重新整理頁面。`);
     return;
   }
-  const { plants, lines, substations, officialPoints, stats, counties, diff } = data;
+  const { plants, lines, substations, officialPoints, officialStatus, stats, counties, diff } = data;
   baseLayers(map, counties);
+  /** Operating status entry for an official id (undefined when none is recorded). */
+  const statusOf = (officialId) => (officialId ? officialStatus[officialId] : undefined);
 
   // --- Layers --------------------------------------------------------------------------
   // One renderer for lines and facilities; apply() re-adds lines before facilities, so
@@ -407,7 +409,7 @@ async function main() {
   const clusters = new Map();
   const facilityItems = plants.features.map((f) => {
     const props = f.properties;
-    const layer = facilityLayer(f, vectorRenderer, diff);
+    const layer = facilityLayer(f, vectorRenderer, diff, statusOf(props.official_id));
     const key = facilityGroupKey(props);
     let group = plantGroup;
     if (key !== null) {
@@ -418,7 +420,10 @@ async function main() {
   });
 
   // Official estimated locations share the vectors canvas (drawn before facilities in apply()).
-  const officialItems = officialPoints.features.map((f) => ({ props: f.properties, layer: officialPointLayer(f, vectorRenderer) }));
+  const officialItems = officialPoints.features.map((f) => ({
+    props: f.properties,
+    layer: officialPointLayer(f, vectorRenderer, statusOf(f.properties.official_id)),
+  }));
   const officialGroup = L.layerGroup().addTo(map);
 
   // --- Controls ------------------------------------------------------------------------
@@ -531,7 +536,7 @@ async function main() {
   });
 
   apply();
-  setupLocate(map, counties, plants, substations, officialPoints, diff);
+  setupLocate(map, counties, plants, substations, officialPoints, diff, statusOf);
   // Handle for debugging in the browser console (e.g. powermap.map.setZoom(12)).
   window.powermap = { map, facilityItems, lineItems, substationItems, officialItems };
 }

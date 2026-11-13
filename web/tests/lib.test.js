@@ -5,6 +5,8 @@ import assert from "node:assert/strict";
 import {
   ENERGY_COLORS,
   ENERGY_ORDER,
+  INACTIVE_COLOR,
+  STATUS_LABELS,
   PRECISION_LABELS,
   REQUIRED_FILES,
   VOLTAGE_ORDER,
@@ -28,6 +30,7 @@ import {
   parseDiffCsv,
   reserveSlot,
   searchFacilities,
+  statusInactive,
   substationPopupHtml,
   substationTypeLabel,
   substationVisible,
@@ -331,7 +334,7 @@ test("voltage checkbox shows line and substation counts", () => {
 
 test("required files include official points; failedFiles names it", () => {
   assert.deepEqual(REQUIRED_FILES, ["plants.geojson", "lines.geojson", "substations.geojson", "official_points.geojson",
-    "stats.json", "counties.geojson"]);
+    "official_status.json", "stats.json", "counties.geojson"]);
   const ok = { status: "fulfilled", value: {} };
   const bad = { status: "rejected", reason: new Error("HTTP 404") };
   const settled = REQUIRED_FILES.map((name) => (name === "official_points.geojson" ? bad : ok));
@@ -385,4 +388,67 @@ test("official point popup shows missing values and escapes text", () => {
   assert.match(escaped, /&lt;b&gt;A&amp;B&lt;\/b&gt;/);
   assert.match(escaped, /&quot;x&quot;/);
   assert.doesNotMatch(escaped, /<b>/);
+});
+
+test("failedFiles names official_status.json", () => {
+  const ok = { status: "fulfilled", value: {} };
+  const bad = { status: "rejected", reason: new Error("HTTP 404") };
+  const settled = REQUIRED_FILES.map((name) => (name === "official_status.json" ? bad : ok));
+  assert.deepEqual(failedFiles(REQUIRED_FILES, settled), ["official_status.json"]);
+});
+
+// --- Operating status -------------------------------------------------------------------
+
+const SOURCE = "https://www.nusc.gov.tw/example.pdf";
+const retired = { status: "retired", since: "2019-07", units: "一號機 2018-12-05；二號機 2019-07-15", source: SOURCE,
+  checked_at: "2026-11-13", note: null };
+const mothballed = { status: "mothballed", since: null, units: null, source: SOURCE, checked_at: "2026-11-13", note: null };
+const partial = { status: "partially_retired", since: "2019", units: "協一、協二機已除役", source: SOURCE,
+  checked_at: "2026-11-13", note: null };
+
+test("status display: symbols (spec example table)", () => {
+  // 核一廠: grey diamond
+  assert.equal(facilityStyle({ kind: "plant", energy: "nuclear" }, retired).color, INACTIVE_COLOR);
+  assert.equal(facilityStyle({ kind: "plant", energy: "nuclear" }).color, "#ffffff");
+  // 龍門廠 official point: grey ring
+  assert.equal(officialPointStyle({ energy_primary: "nuclear" }, mothballed).color, INACTIVE_COLOR);
+  // 協和: partially retired keeps its colour
+  assert.equal(facilityStyle({ kind: "plant", energy: "oil" }, partial).fillColor, ENERGY_COLORS.unknown);
+  assert.equal(facilityStyle({ kind: "plant", energy: "coal" }, partial).fillColor, ENERGY_COLORS.coal);
+  // 台中發電廠: no status, normal colour; a retired circle plant turns grey
+  assert.equal(facilityStyle({ kind: "plant", energy: "coal" }, undefined).fillColor, ENERGY_COLORS.coal);
+  assert.equal(facilityStyle({ kind: "plant", energy: "coal" }, retired).fillColor, INACTIVE_COLOR);
+  assert.equal(statusInactive(partial), false);
+  assert.equal(statusInactive(undefined), false);
+  assert.equal(STATUS_LABELS.mothballed, "封存");
+});
+
+test("status display: popup rows (spec example table)", () => {
+  const nuclear = facilityPopupHtml({ name: "第一核能發電廠", kind: "plant", energy: "nuclear", energy_sources: ["nuclear"],
+    capacity_mw: 1272, capacity_source: "osm", operator: null, n_generators: 0, energy_primary: "nuclear" }, undefined, retired);
+  assert.match(nuclear, /<th>運轉狀態<\/th><td>已停止運轉（2019-07）<\/td>/);
+  assert.match(nuclear, /<th>機組<\/th><td>一號機 2018-12-05；二號機 2019-07-15<\/td>/);
+  assert.match(nuclear, new RegExp(`<a href="${SOURCE.replaceAll(".", "\\.")}" target="_blank" rel="noopener">公開資料</a>`));
+  const lungmen = officialPointPopupHtml({ name: "龍門廠", capacity_mw: 2700, energy_primary: "nuclear", address: "新北市",
+    precision: "site", checked_at: "2026-11-13" }, mothballed);
+  assert.match(lungmen, /<th>運轉狀態<\/th><td>封存<\/td>/);
+  assert.doesNotMatch(lungmen, /<th>機組<\/th>/);
+  assert.doesNotMatch(lungmen, /null|undefined/);
+  const hsiehho = facilityPopupHtml({ name: "協和發電廠", kind: "plant", energy: "other", energy_sources: ["other"],
+    capacity_mw: 2000, operator: null, n_generators: 0 }, undefined, partial);
+  assert.match(hsiehho, /部分機組已除役（2019）/);
+  assert.match(hsiehho, /<th>機組<\/th><td>協一、協二機已除役<\/td>/);
+  const taichung = facilityPopupHtml({ name: "台中火力發電廠", kind: "plant", energy: "coal", energy_sources: ["coal"],
+    capacity_mw: 5500, operator: null, n_generators: 0 }, undefined, undefined);
+  assert.doesNotMatch(taichung, /運轉狀態/);
+});
+
+test("status rows escape text and skip non-http sources", () => {
+  const html = facilityPopupHtml({ name: "x", kind: "plant", energy: "coal", energy_sources: ["coal"], capacity_mw: 1,
+    operator: null, n_generators: 0 }, undefined,
+  { status: "retired", since: "<b>2019</b>", units: "<i>u</i>", source: "javascript:alert(1)", checked_at: "2026-11-13" });
+  assert.match(html, /&lt;b&gt;2019&lt;\/b&gt;/);
+  assert.match(html, /&lt;i&gt;u&lt;\/i&gt;/);
+  assert.doesNotMatch(html, /javascript:/);
+  assert.doesNotMatch(html, /狀態來源/);
 });

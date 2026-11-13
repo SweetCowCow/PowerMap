@@ -129,7 +129,7 @@ boundaries:
 # pipeline outputs, so it never triggers the pipeline (CI has no OSM snapshot and the
 # parameter stamps above back-date outputs on a fresh checkout).
 WEB_DATA  := web/data
-WEB_FILES := $(PLANTS) $(LINES) $(SUBSTATIONS) $(OFFICIAL_POINTS) $(STATS) $(DIFF) $(COUNTIES)
+WEB_FILES := $(PLANTS) $(LINES) $(SUBSTATIONS) $(OFFICIAL_POINTS) $(OFFICIAL_STATUS) $(STATS) $(DIFF) $(COUNTIES)
 web:
 	mkdir -p $(WEB_DATA)
 	cp $(WEB_FILES) $(WEB_DATA)/

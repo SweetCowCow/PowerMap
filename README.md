@@ -60,6 +60,7 @@ uv sync
 | `data/processed/official_diff.csv` | OSM 與官方容量差異超過門檻的電廠 |
 | `data/processed/unmatched.csv` | 沒有對應到 OSM 的官方電廠：`no_osm`（已審閱，OSM 沒有）、`unreviewed`（尚未審閱）、`osm_missing`（對照表的 OSM id 已失效） |
 | `data/processed/official_points.geojson` | OSM 沒有、但在 `data/official/locations.csv` 有人工確認估計位置的官方電廠，每座一個點，屬性依序為 `official_id`、`name`、`county`、`address`、`capacity_mw`、`energy_primary`、`precision`、`method`、`source`、`checked_at`。這些電廠仍列在 `unmatched.csv`；`stats.json` 的 `official.located` 是點數 |
+| `data/processed/official_status.json` | `data/official/status.csv` 的運轉狀態，以 `official_id` 為鍵，值為 `status`、`since`、`units`、`source`、`checked_at`、`note`（空白為 `null`） |
 
 ## 網頁
 
@@ -76,6 +77,7 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 - 能源篩選以 `energy_sources` 為準：多種能源的設施，只要勾選其中一種就會顯示。
 - 獨立發電機依能源分組聚合，聚合點大小固定、數字是支數，放大到 zoom 12 以上就逐支顯示；電廠不聚合。
 - 「只看資料缺口」只顯示缺容量的設施與缺電壓的線，並和能源、電壓篩選同時生效。
+- 運轉狀態：已停止運轉或封存的電廠（`official_status.json` 中 `retired`、`mothballed`）畫成深灰色，Popup 顯示運轉狀態、機組說明和狀態來源連結；部分機組已除役的維持原本顏色，只在 Popup 說明。沒有列在狀態表的電廠不顯示狀態。
 - 台電資料（估計位置）：OSM 沒標、依台電地址估計位置的電廠畫成虛線空心圓，顏色是台電登記的主要能源，跟著能源勾選與「台電資料（估計位置）」開關，開啟「只看資料缺口」時隱藏（容量已知）。Popup 會寫明「位置為依地址估計，不是 OSM 資料」和精確程度；搜尋框另有「台電資料」分組。
 - push 到 `main` 後，GitHub Actions（`.github/workflows/pages.yml`）會先跑 `make test-web`，再執行 `make web`，最後發佈 `web/` 到 GitHub Pages。CI 不跑 Python 資料管線，所以資料更新後要先在本機執行 `make data` 並 commit `data/processed/`。
 
@@ -121,6 +123,22 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 
 補值規則：只在 OSM 缺容量時補官方值（`capacity_source: "taipower"`），OSM 原值不覆蓋；`energy_primary` 取官方容量最大的燃料（`energy_primary_source: "taipower"`），`energy`／`energy_sources` 仍是 OSM 判定。
 
+### 運轉狀態表 `data/official/status.csv`
+
+官方開放資料和 OSM 都沒有寫哪些機組已除役，所以運轉狀態由人工依公開資訊（核安會文件、台電新聞稿、新聞報導）整理：
+
+| 欄位 | 內容 |
+| --- | --- |
+| `official_id` | 官方電廠 id |
+| `status` | `retired`（已停止運轉）、`mothballed`（封存）、`partially_retired`（部分機組已除役） |
+| `since` | 生效日期，`YYYY`、`YYYY-MM` 或 `YYYY-MM-DD`，查不到可空白 |
+| `units` | 各機組說明 |
+| `source` | 公開來源網址（必須是 http 或 https） |
+| `checked_at` | 查證日期 `YYYY-MM-DD` |
+| `note` | 補充說明 |
+
+修改後執行 `make data`：重複的 id、不合法的 `status`、日期格式錯誤或來源不是網址會讓 `make data` 失敗並印出問題列；不在官方清單的 id 印警告並忽略。狀態會過時，更新資料時要一併複查 `checked_at`。
+
 ## 資料原則
 
 - **缺值保持 `null`**：不補零、不輸出空字串、不補線。缺電壓的線 `voltage_class` 為 `missing`。
@@ -143,4 +161,5 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 - 選用正射影像：內政部國土測繪中心 WMTS（PHOTO2），政府資料開放授權條款第 1 版。
 - 地名搜尋：OpenStreetMap Nominatim（按下搜尋才送出查詢），© OpenStreetMap contributors。
 - 台電電廠估計位置（`data/official/locations.csv`）：以 OpenStreetMap Nominatim 與 OSM 物件位置人工查得，屬 OSM 衍生資料，適用 ODbL 1.0。
+- 運轉狀態（`data/official/status.csv`）：人工整理自各列 `source` 欄的公開網頁，只記錄事實摘要與連結。
 - 官方資料：台灣電力股份有限公司，經政府資料開放平臺（data.gov.tw）以[政府資料開放授權條款第 1 版](https://data.gov.tw/license)提供。原始檔與下載時間、SHA-256 記錄在 `data/official/raw/<日期>/manifest.json`。
