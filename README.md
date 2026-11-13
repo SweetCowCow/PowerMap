@@ -53,7 +53,8 @@ uv sync
 | --- | --- |
 | `data/processed/plants.geojson` | 設施點（電廠與獨立發電機），含官方對照欄位 `official_id`、`energy_primary` |
 | `data/processed/lines.geojson` | 電力線（line、minor_line、cable），每個 OSM way 一筆 |
-| `data/processed/substations.geojson` | 變電所（`power=substation`），每個 OSM 物件一個點（面取內部代表點），含名稱、營運者、種類（`substation` 標籤）、最高電壓與電壓分級（和電力線相同的 5 級）。不去重 |
+| `data/processed/substations.geojson` | 變電所（`power=substation`），每個 OSM 物件一個點（面取內部代表點），含名稱、營運者、種類（`substation` 標籤）、最高電壓與電壓分級（和電力線相同的 5 級）。只去掉明確的重複：一個變電所範圍有 90% 以上落在另一個變電所範圍內，而且兩者只有一個有名稱（去掉沒名稱的）或同名（去掉裡面的）；名稱不同都保留 |
+| `data/processed/substation_dedup_log.csv` | 被去掉的變電所，欄位和 `dedup_log.csv` 相同（`action` 為 `substation_contained`，`reason` 為 `unnamed` 或 `same_name`） |
 | `data/processed/stats.json` | 快照時間、數量、缺值、分類與排除統計；變電所另有 `substations`、`substations_missing_voltage`、`substations_by_voltage_class` |
 | `data/processed/dedup_log.csv` | 每一筆歸併、排除、合併的紀錄（含依官方對照表合併的 `official_same_plant`），方便人工複查 |
 | `data/processed/official_diff.csv` | OSM 與官方容量差異超過門檻的電廠 |

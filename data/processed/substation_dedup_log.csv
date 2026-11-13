@@ -1,0 +1,5 @@
+action,kept_osm_id,dropped_osm_id,reason,distance_m
+substation_contained,w659199804,w659199805,unnamed,4.7
+substation_contained,w807986870,w807986863,same_name,8.7
+substation_contained,w323413321,w942837397,unnamed,9.6
+substation_contained,w323405078,w942837398,unnamed,10.0

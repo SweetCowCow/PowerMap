@@ -5,7 +5,7 @@ import json
 import pytest
 from shapely.geometry import Point, shape
 
-from powermap.substations import PROPERTY_KEYS, build_substations, main
+from powermap.substations import PROPERTY_KEYS, build_substations, build_substations_with_log, main
 
 
 def feature(osm_type, osm_id, geometry, **tags):
@@ -74,5 +74,81 @@ def test_no_substations_writes_empty_collection(tmp_path):
     src.write_text(json.dumps(feature("way", 1, SQUARE) | {"properties": {"osm_type": "way", "osm_id": 1,
                                                                           "tags": {"power": "line"}}}) + "\n")
     out = tmp_path / "substations.geojson"
-    assert main(["--input", str(src), "--output", str(out)]) == 0
+    log = tmp_path / "substation_dedup_log.csv"
+    assert main(["--input", str(src), "--output", str(out), "--dedup-log", str(log)]) == 0
     assert json.loads(out.read_text(encoding="utf-8")) == {"type": "FeatureCollection", "features": []}
+    assert log.read_text(encoding="utf-8") == "action,kept_osm_id,dropped_osm_id,reason,distance_m\n"
+
+
+# --- Contained substation removal ---------------------------------------------------
+
+
+def square(lon, lat, size):
+    return {"type": "Polygon", "coordinates": [[[lon, lat], [lon + size, lat], [lon + size, lat + size],
+                                                [lon, lat + size], [lon, lat]]]}
+
+
+OUTER = square(121.0, 24.0, 0.01)  # about 1 km
+INNER = square(121.004, 24.004, 0.002)  # fully inside OUTER
+
+
+def ids(features):
+    return [f["properties"]["osm_id"] for f in features]
+
+
+@pytest.mark.parametrize("inner_name, outer_name, inner_geom, dropped, reason", [
+    (None, "沙崙一次配電變電所", INNER, "w2", "unnamed"),          # unnamed inside named: inner removed
+    ("六家第一次配電變電所", None, INNER, "w1", "unnamed"),          # named inside unnamed: outer removed
+    ("義和開閉所", "義和開閉所", INNER, "w2", "same_name"),
+    ("台灣電力公司電力修護處南部分處", "同盟變電所", INNER, None, None),
+    (None, "變電站", square(121.01, 24.004, 0.002), None, None),   # only touching OUTER
+    # 89% inside: shift the 0.002-wide square so 11% of its width sticks out of OUTER
+    (None, "某變電所", square(121.01 - 0.002 * 0.89, 24.004, 0.002), None, None),
+])
+def test_contained_substation_rules(inner_name, outer_name, inner_geom, dropped, reason):
+    outer_tags = {} if outer_name is None else {"name": outer_name}
+    inner_tags = {} if inner_name is None else {"name": inner_name}
+    features, log = build_substations_with_log([feature("way", 1, OUTER, **outer_tags),
+                                                feature("way", 2, inner_geom, **inner_tags)])
+    assert ids(features) == [i for i in ["w1", "w2"] if i != dropped]
+    if dropped:
+        kept = "w1" if dropped == "w2" else "w2"
+        assert log == [{"action": "substation_contained", "kept_osm_id": kept, "dropped_osm_id": dropped,
+                        "reason": reason, "distance_m": log[0]["distance_m"]}]
+        assert isinstance(log[0]["distance_m"], float)  # both centred here, so 0.0
+    else:
+        assert log == []
+
+
+def test_contained_keeps_smallest_container_and_log_order():
+    middle = square(121.002, 24.002, 0.006)
+    items = [feature("relation", 5, square(121.0045, 24.0045, 0.001)),  # unnamed, inside middle and OUTER
+             feature("way", 9, INNER, name="中層"),                       # named, different: kept
+             feature("way", 3, middle, name="中層"),
+             feature("way", 1, OUTER, name="外層")]
+    features, log = build_substations_with_log(items)
+    assert ids(features) == ["w1", "w3"]
+    # r5's pair partner w9 is itself removed, so the log points at the substation that stays (w3)
+    assert [(r["dropped_osm_id"], r["kept_osm_id"], r["reason"]) for r in log] == [
+        ("w9", "w3", "same_name"),
+        ("r5", "w3", "unnamed"),
+    ]
+
+
+def test_points_are_never_removed_or_containers():
+    point_inside = {"type": "Point", "coordinates": [121.005, 24.005]}
+    features, log = build_substations_with_log([feature("node", 4, point_inside), feature("way", 1, OUTER)])
+    assert ids(features) == ["n4", "w1"]
+    assert log == []
+
+
+def test_main_writes_dedup_log(tmp_path):
+    src = tmp_path / "power.geojsonseq"
+    src.write_text("\n".join(json.dumps(f) for f in [feature("way", 1, OUTER, name="義和開閉所"),
+                                                       feature("way", 2, INNER, name="義和開閉所")]) + "\n")
+    out, log = tmp_path / "substations.geojson", tmp_path / "log.csv"
+    assert main(["--input", str(src), "--output", str(out), "--dedup-log", str(log)]) == 0
+    assert ids(json.loads(out.read_text(encoding="utf-8"))["features"]) == ["w1"]
+    lines = log.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "action,kept_osm_id,dropped_osm_id,reason,distance_m"
+    assert lines[1].startswith("substation_contained,w1,w2,same_name,")

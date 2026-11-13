@@ -742,8 +742,6 @@ rooftop_solar_excluded,,w1422284370,solar capacity 0.499 MW < 1.0 MW,
 rooftop_solar_excluded,,w1499717625,solar capacity 0.5 MW < 1.0 MW,
 rooftop_solar_excluded,,w1499734684,solar capacity 0.3294 MW < 1.0 MW,
 official_same_plant,r18726493,w661662183,tp-plant:大潭發電廠,715.3
-official_same_plant,w1105678337,w976767036,tp-plant:大觀發電廠,248.3
-official_same_plant,w1105678337,w515759414,tp-plant:大觀發電廠,341.4
 official_same_plant,w226576525,w307905912,tp-plant:興達發電廠,1659.7
 official_same_plant,w310318489,w310318490,tp-re:核三廠太陽光電發電站,90.3
 official_same_plant,w310318489,w310318491,tp-re:核三廠太陽光電發電站,187.8
