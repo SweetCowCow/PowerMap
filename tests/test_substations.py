@@ -60,7 +60,7 @@ def test_point_kept_and_rounded():
     assert f["properties"]["geom_src"] == "Point"
 
 
-def test_only_substations_sorted_and_not_deduplicated():
+def test_only_substations_sorted_and_equal_areas_kept():
     plant = feature("way", 1, SQUARE)
     plant["properties"]["tags"]["power"] = "plant"
     items = [feature("way", 10, SQUARE), feature("relation", 3, SQUARE), feature("way", 2, SQUARE), plant,
@@ -77,7 +77,7 @@ def test_no_substations_writes_empty_collection(tmp_path):
     log = tmp_path / "substation_dedup_log.csv"
     assert main(["--input", str(src), "--output", str(out), "--dedup-log", str(log)]) == 0
     assert json.loads(out.read_text(encoding="utf-8")) == {"type": "FeatureCollection", "features": []}
-    assert log.read_text(encoding="utf-8") == "action,kept_osm_id,dropped_osm_id,reason,distance_m\n"
+    assert log.read_text(encoding="utf-8").splitlines() == ["action,kept_osm_id,dropped_osm_id,reason,distance_m"]
 
 
 # --- Contained substation removal ---------------------------------------------------
@@ -128,10 +128,10 @@ def test_contained_keeps_smallest_container_and_log_order():
              feature("way", 1, OUTER, name="外層")]
     features, log = build_substations_with_log(items)
     assert ids(features) == ["w1", "w3"]
-    # r5's pair partner w9 is itself removed, so the log points at the substation that stays (w3)
+    # kept_osm_id is always the other member of the pair, even when it is removed by another pair
     assert [(r["dropped_osm_id"], r["kept_osm_id"], r["reason"]) for r in log] == [
         ("w9", "w3", "same_name"),
-        ("r5", "w3", "unnamed"),
+        ("r5", "w9", "unnamed"),
     ]
 
 
@@ -152,3 +152,12 @@ def test_main_writes_dedup_log(tmp_path):
     lines = log.read_text(encoding="utf-8").splitlines()
     assert lines[0] == "action,kept_osm_id,dropped_osm_id,reason,distance_m"
     assert lines[1].startswith("substation_contained,w1,w2,same_name,")
+
+
+def test_self_intersecting_area_is_not_removed_and_does_not_fail():
+    bowtie = {"type": "Polygon", "coordinates": [[[121.004, 24.004], [121.006, 24.006], [121.006, 24.004],
+                                                  [121.004, 24.006], [121.004, 24.004]]]}
+    features, log = build_substations_with_log([feature("way", 1, bowtie, name="甲"),
+                                                feature("way", 2, square(121.0, 24.0, 0.02), name="乙")])
+    assert ids(features) == ["w1", "w2"]  # different names: both kept, and no exception
+    assert log == []

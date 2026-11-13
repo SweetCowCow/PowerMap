@@ -24,6 +24,7 @@ import shapely
 from shapely.geometry import shape
 from shapely.strtree import STRtree
 
+from powermap.facilities import DEDUP_LOG_HEADER
 from powermap.geo import to_3826
 from powermap.osm import osm_ref, osm_url, tag_text
 from powermap.parsers import classify_voltage, parse_voltage_max_kv
@@ -44,7 +45,6 @@ PROPERTY_KEYS = (
 )
 _TYPE_ORDER = {"node": 0, "way": 1, "relation": 2}
 CONTAINED_SHARE = 0.9
-DEDUP_LOG_HEADER = ("action", "kept_osm_id", "dropped_osm_id", "reason", "distance_m")
 
 
 def substation_properties(osm_type: str, osm_id: int, tags: dict, geom_src: str) -> dict:
@@ -83,7 +83,8 @@ def contained_removals(names: list[str | None], geoms: list) -> dict[int, tuple[
     A is contained in B when at least 90% of A's area lies in B and A is smaller than B
     (EPSG:3826); B is the smallest such container. When only one of the pair has a name, the
     unnamed one is dropped (inner or outer); when both are unnamed or share a name, A is dropped;
-    different names keep both. A substation is dropped at most once, first pair in sort order wins.
+    different names keep both. A substation is dropped at most once, first pair in sort order wins;
+    the kept index is always the other member of that pair, even if it is dropped by another pair.
     """
     areas = _areas_3826(geoms)
     indexed = [i for i, a in enumerate(areas) if a is not None]
@@ -97,7 +98,11 @@ def contained_removals(names: list[str | None], geoms: list) -> dict[int, tuple[
             outer = areas[j]
             if j == i or outer.area <= inner.area:
                 continue
-            if inner.intersection(outer).area >= CONTAINED_SHARE * inner.area:
+            try:
+                shared = inner.intersection(outer).area
+            except shapely.errors.GEOSException:
+                continue  # unusable geometry: treat as not contained
+            if shared >= CONTAINED_SHARE * inner.area:
                 containers.append(j)
         if not containers:
             continue
@@ -112,13 +117,6 @@ def contained_removals(names: list[str | None], geoms: list) -> dict[int, tuple[
             continue
         if drop not in removals:
             removals[drop] = (keep, reason)
-    # A kept substation may itself be dropped by another pair: record the one that finally stays.
-    for drop, (keep, reason) in list(removals.items()):
-        seen = {drop}
-        while keep in removals and keep not in seen:
-            seen.add(keep)
-            keep = removals[keep][0]
-        removals[drop] = (keep, reason)
     return removals
 
 
@@ -157,7 +155,7 @@ def write_dedup_log(path: str | Path, rows: list[dict]) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=DEDUP_LOG_HEADER, lineterminator="\n")
+        writer = csv.DictWriter(fh, fieldnames=DEDUP_LOG_HEADER)
         writer.writeheader()
         writer.writerows(rows)
 

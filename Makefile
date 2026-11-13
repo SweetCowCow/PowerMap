@@ -96,7 +96,7 @@ $(LINES): $(EXTRACT_OUT) powermap/lines.py powermap/osm.py powermap/parsers.py p
 	$(PY) -m powermap.lines --input $(SEQ) --output $(LINES)
 
 # 7. Substations
-%/processed/substations.geojson %/processed/substation_dedup_log.csv: $(EXTRACT_OUT) powermap/substations.py powermap/osm.py powermap/parsers.py powermap/geo.py Makefile
+%/processed/substations.geojson %/processed/substation_dedup_log.csv: $(EXTRACT_OUT) powermap/substations.py powermap/facilities.py powermap/osm.py powermap/parsers.py powermap/geo.py Makefile
 	$(PY) -m powermap.substations --input $(SEQ) --output $(SUBSTATIONS) --dedup-log $(SUB_DEDUP_LOG)
 
 # 8. Estimated official locations (reviewed by hand in data/official/locations.csv)
