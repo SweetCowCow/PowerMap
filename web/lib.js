@@ -363,10 +363,13 @@ export const PRECISION_LABELS = {
   offshore: "外海",
 };
 
-/** Hollow dashed circle, so an estimate never looks like a filled OSM facility symbol. */
+/**
+ * Hollow dashed circle, so an estimate never looks like a filled OSM facility symbol. Radius 9 is
+ * wider than a plant dot (5) and a substation square (10 px), leaving a ring to click.
+ */
 export function officialPointStyle(props) {
   return {
-    radius: 6,
+    radius: 9,
     color: ENERGY_COLORS[props.energy_primary] ?? ENERGY_COLORS.unknown,
     weight: 2,
     dashArray: "3 3",

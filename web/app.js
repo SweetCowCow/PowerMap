@@ -417,7 +417,7 @@ async function main() {
     return { props, layer, group };
   });
 
-  // Official estimated locations share the vectors canvas (drawn after facilities in apply()).
+  // Official estimated locations share the vectors canvas (drawn before facilities in apply()).
   const officialItems = officialPoints.features.map((f) => ({ props: f.properties, layer: officialPointLayer(f, vectorRenderer) }));
   const officialGroup = L.layerGroup().addTo(map);
 
@@ -474,6 +474,19 @@ async function main() {
       }
     }
 
+    // Official points go on the canvas before facilities: a later layer is drawn on top and
+    // wins the click, and several estimates sit exactly on an OSM plant. The wider ring
+    // (radius 9) keeps the estimate clickable around the plant dot and substation square.
+    officialGroup.clearLayers();
+    let visibleOfficial = 0;
+    for (const item of officialItems) {
+      if (officialPointVisible(item.props, filters)) {
+        officialGroup.addLayer(item.layer);
+        visibleOfficial += 1;
+      }
+    }
+    setCount("stat-official", visibleOfficial);
+
     plantGroup.clearLayers();
     const perCluster = new Map([...clusters.keys()].map((k) => [k, []]));
     let visibleFacilities = 0;
@@ -489,15 +502,6 @@ async function main() {
     }
 
     setCount("stat-facilities", visibleFacilities);
-    officialGroup.clearLayers();
-    let visibleOfficial = 0;
-    for (const item of officialItems) {
-      if (officialPointVisible(item.props, filters)) {
-        officialGroup.addLayer(item.layer);
-        visibleOfficial += 1;
-      }
-    }
-    setCount("stat-official", visibleOfficial);
 
     substationGroup.clearLayers();
     let visibleSubstations = 0;

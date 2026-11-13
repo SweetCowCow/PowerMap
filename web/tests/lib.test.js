@@ -355,7 +355,7 @@ test("official point visibility (spec example table)", () => {
 
 test("official point symbol is a hollow dashed circle in the energy colour", () => {
   assert.deepEqual(officialPointStyle({ energy_primary: "wind" }),
-    { radius: 6, color: ENERGY_COLORS.wind, weight: 2, dashArray: "3 3", fill: false });
+    { radius: 9, color: ENERGY_COLORS.wind, weight: 2, dashArray: "3 3", fill: false });
   assert.equal(officialPointStyle({ energy_primary: null }).color, ENERGY_COLORS.unknown);
 });
 
