@@ -66,7 +66,8 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 ```
 
 - 純 HTML/JS，以 CDN 載入 Leaflet 1.9.4 與 Leaflet.markercluster 1.5.3，不需要打包工具。篩選、Popup 等邏輯在 `web/lib.js`，畫面接線在 `web/app.js`。
-- 預設底圖是縣市界輪廓，不請求外部圖磚；右上角可以切換成 CARTO 深色圖磚。
+- 預設底圖是縣市界輪廓，不請求外部圖磚；右上角可以切換成 OSM 標準圖磚（以 CSS 調暗，只當選用圖層，符合 OSM 圖磚的低流量使用政策）。
+- 側欄以電力線為主：電壓篩選預設全勾；發電設施的能源篩選預設全部不勾，需要時再勾選。
 - 能源篩選以 `energy_sources` 為準：多種能源的設施，只要勾選其中一種就會顯示。
 - 獨立發電機依能源分組聚合，聚合點大小固定、數字是支數，放大到 zoom 12 以上就逐支顯示；電廠不聚合。
 - 「只看資料缺口」只顯示缺容量的設施與缺電壓的線，並和能源、電壓篩選同時生效。
@@ -113,5 +114,5 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 - 地圖資料 © OpenStreetMap contributors，以 [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) 授權。快照來源：Geofabrik（`https://download.geofabrik.de/asia/taiwan-latest.osm.pbf`）。
 - 輸出的 GeoJSON 為 OSM 的衍生資料庫，同樣適用 ODbL 1.0。
 - 縣市界線：內政部國土測繪中心「直轄市、縣市界線(TWD97經緯度)」（data.gov.tw 7442），政府資料開放授權條款第 1 版；網址、下載時間與 SHA-256 記在 `counties.geojson` 的 `source` 欄位。
-- 深色圖磚（選用圖層）：© OpenStreetMap contributors © CARTO。
+- 選用圖磚：OpenStreetMap 標準圖磚，© OpenStreetMap contributors。
 - 官方資料：台灣電力股份有限公司，經政府資料開放平臺（data.gov.tw）以[政府資料開放授權條款第 1 版](https://data.gov.tw/license)提供。原始檔與下載時間、SHA-256 記錄在 `data/official/raw/<日期>/manifest.json`。

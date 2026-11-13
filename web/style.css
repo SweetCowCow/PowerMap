@@ -286,6 +286,9 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 
 .nuclear-icon svg { display: block; }
 
+/* OSM standard tiles are light: invert and rotate hue so roads/water keep their hue but sit on a dark ground. */
+.osm-dim { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6); }
+
 /* --- Mobile: bottom drawer ---------------------------------------------------------- */
 
 @media (max-width: 767px) {

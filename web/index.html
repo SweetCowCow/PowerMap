@@ -28,32 +28,18 @@
       <div class="panel-body" id="panel-body">
         <header class="intro">
           <h1>台灣電力地圖</h1>
-          <p>OpenStreetMap 上標示的發電設施與電力線。灰色與虛線是資料缺口，不是沒有設施。</p>
+          <p>OpenStreetMap 上標示的電力線與發電設施。虛線是缺電壓的線段，不是沒有線路。發電設施預設不顯示，可在下方依能源勾選。</p>
         </header>
 
         <section class="stats" aria-label="目前顯示">
-          <p class="stat"><span class="stat-num" id="stat-facilities">–</span><span class="stat-of" id="stat-facilities-total"></span> 座發電設施</p>
           <p class="stat"><span class="stat-num" id="stat-lines">–</span><span class="stat-of" id="stat-lines-total"></span> 段電力線</p>
+          <p class="stat"><span class="stat-num" id="stat-facilities">–</span><span class="stat-of" id="stat-facilities-total"></span> 座發電設施</p>
           <dl class="gaps">
-            <div><dt>缺容量的設施</dt><dd id="stat-missing-capacity">–</dd></div>
             <div><dt>缺電壓的線段</dt><dd id="stat-missing-voltage">–</dd></div>
+            <div><dt>缺容量的設施</dt><dd id="stat-missing-capacity">–</dd></div>
             <div><dt>台電有、OSM 沒標的電廠</dt><dd id="stat-unmatched">–</dd></div>
           </dl>
         </section>
-
-        <fieldset class="filter" id="energy-filter">
-          <legend>能源</legend>
-          <div class="bulk">
-            <button type="button" data-bulk="all">全選</button>
-            <button type="button" data-bulk="none">全不選</button>
-          </div>
-          <ul class="options" id="energy-options"></ul>
-          <ul class="options symbols" aria-label="其他符號">
-            <li><span class="swatch swatch-mixed" aria-hidden="true"></span>多種能源（勾選其中一種就會顯示）</li>
-            <li><span class="swatch swatch-plant" aria-hidden="true"></span>電廠</li>
-            <li><span class="swatch swatch-generator" aria-hidden="true"></span>獨立發電機（縮小時依能源聚合，數字是支數）</li>
-          </ul>
-        </fieldset>
 
         <fieldset class="filter" id="voltage-filter">
           <legend>電力線電壓</legend>
@@ -65,6 +51,20 @@
           <span class="gap-track" aria-hidden="true"></span>
           <span>只看資料缺口<small>只顯示缺容量的設施與缺電壓的線</small></span>
         </label>
+
+        <fieldset class="filter" id="energy-filter">
+          <legend>發電設施能源</legend>
+          <div class="bulk">
+            <button type="button" data-bulk="all">全選</button>
+            <button type="button" data-bulk="none">全不選</button>
+          </div>
+          <ul class="options" id="energy-options"></ul>
+          <ul class="options symbols" aria-label="其他符號">
+            <li><span class="swatch swatch-mixed" aria-hidden="true"></span>多種能源（勾選其中一種就會顯示）</li>
+            <li><span class="swatch swatch-plant" aria-hidden="true"></span>電廠</li>
+            <li><span class="swatch swatch-generator" aria-hidden="true"></span>獨立發電機（縮小時依能源聚合，數字是支數）</li>
+          </ul>
+        </fieldset>
 
         <footer class="credits">
           <p>點的大小只用來分辨電廠與發電機，不代表容量；線寬也不代表電力潮流。</p>

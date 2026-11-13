@@ -20,17 +20,17 @@ The web page SHALL load `data/plants.geojson`, `data/lines.geojson`, `data/stats
 
 ### Requirement: Base layers
 
-The map SHALL use a `#0b1826` background and SHALL show the county outlines from `counties.geojson` as the default base layer, labelled 縣市界（離線）, without requesting any map tiles. A second base layer labelled 深色圖磚 SHALL use CARTO dark tiles with the attribution "© OpenStreetMap contributors © CARTO". The initial view SHALL fit the Taiwan main island. The page SHALL NOT offer Kinmen, Matsu or Penghu jump controls.
+The map SHALL use a `#0b1826` background and SHALL show the county outlines from `counties.geojson` as the default base layer, labelled 縣市界（離線）, without requesting any map tiles. A second base layer labelled OSM 圖磚（調暗） SHALL use the OpenStreetMap standard tiles from `tile.openstreetmap.org`, darkened with a CSS filter applied only to that tile layer, with the attribution "© OpenStreetMap contributors". The page SHALL NOT request CARTO tiles. The initial view SHALL fit the Taiwan main island. The page SHALL NOT offer Kinmen, Matsu or Penghu jump controls.
 
 #### Scenario: Default view makes no tile requests
 
 - **WHEN** the page loads with default settings
-- **THEN** no request is made to the CARTO tile host and county outlines are visible
+- **THEN** no request is made to `tile.openstreetmap.org` and county outlines are visible
 
 #### Scenario: Switch to tiles
 
-- **WHEN** the user selects 深色圖磚 in the layers control
-- **THEN** CARTO tiles load beneath the power layers and the attribution is shown
+- **WHEN** the user selects OSM 圖磚（調暗） in the layers control
+- **THEN** OSM tiles load beneath the power layers with the darkening filter, power symbols keep their colours, and the attribution "© OpenStreetMap contributors" is shown
 
 ### Requirement: Facility symbols
 
@@ -69,7 +69,12 @@ Facilities with `kind` `generator` SHALL be clustered in one cluster group per `
 
 ### Requirement: Energy filter
 
-The page SHALL offer nine energy checkboxes (solar, wind, hydro, gas, coal, nuclear, geothermal, other, unknown), all checked by default, with select-all and select-none controls. A facility SHALL be visible when at least one category in its `energy_sources` is checked, or when its `energy_sources` is empty and unknown is checked. The page SHALL NOT offer a separate mixed checkbox.
+The page SHALL offer nine energy checkboxes (solar, wind, hydro, gas, coal, nuclear, geothermal, other, unknown), all unchecked by default, with select-all and select-none controls. A facility SHALL be visible when at least one category in its `energy_sources` is checked, or when its `energy_sources` is empty and unknown is checked. The page SHALL NOT offer a separate mixed checkbox.
+
+#### Scenario: Facilities hidden on first load
+
+- **WHEN** the page loads with default settings
+- **THEN** no facility is drawn, the visible facility count is 0, and all 2,515 lines are drawn
 
 #### Scenario: Filter by energy sources
 
@@ -141,7 +146,7 @@ The page SHALL show the snapshot time from `stats.snapshot`, the currently visib
 
 ### Requirement: Legend and footer
 
-Filters and legend SHALL be one panel: each checkbox shows its colour or line style. The legend SHALL state that symbol size does not represent capacity and line width does not represent power flow. The footer SHALL show: data © OpenStreetMap contributors under ODbL 1.0; Taipower and national county boundary data under 政府資料開放授權條款第1版; the OSM snapshot time; and a statement that the map is not a real-time supply map and that a facility's presence does not mean it is operating.
+Filters and legend SHALL be one panel: each checkbox shows its colour or line style. The panel SHALL list, in order, the line statistics before the facility statistics, the voltage filter, the data gap toggle, and the energy filter. The legend SHALL state that symbol size does not represent capacity and line width does not represent power flow. The footer SHALL show: data © OpenStreetMap contributors under ODbL 1.0; Taipower and national county boundary data under 政府資料開放授權條款第1版; the OSM snapshot time; and a statement that the map is not a real-time supply map and that a facility's presence does not mean it is operating.
 
 #### Scenario: Footer content
 

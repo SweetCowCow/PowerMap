@@ -67,13 +67,14 @@ function baseLayers(map, counties) {
     style: { color: "#22384a", weight: 1, fillColor: "#142534", fillOpacity: 1 },
     attribution: "縣市界：內政部國土測繪中心",
   });
-  const tiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    subdomains: "abcd",
+  // OSM standard tiles are light; the `osm-dim` class darkens only this tile layer (see style.css).
+  const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+    className: "osm-dim",
+    attribution: '圖磚 © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   });
   outline.addTo(map);
-  L.control.layers({ "縣市界（離線）": outline, "深色圖磚": tiles }, null, { position: "topright" }).addTo(map);
+  L.control.layers({ "縣市界（離線）": outline, "OSM 圖磚（調暗）": tiles }, null, { position: "topright" }).addTo(map);
 }
 
 function nuclearIcon() {
@@ -124,11 +125,11 @@ function clusterGroup(energy) {
   });
 }
 
-function buildOptions(listId, order, labelFor, countFor, swatchFor) {
+function buildOptions(listId, order, labelFor, countFor, swatchFor, checked) {
   const list = document.getElementById(listId);
   list.innerHTML = order.map((key) => `
     <li><label>
-      <input type="checkbox" value="${key}" checked>
+      <input type="checkbox" value="${key}"${checked ? " checked" : ""}>
       ${swatchFor(key)}
       <span class="option-label">${escapeHtml(labelFor(key))}</span>
       <span class="option-count">${fmt(countFor(key))}</span>
@@ -195,10 +196,10 @@ async function main() {
   const energyList = buildOptions("energy-options", ENERGY_ORDER, (k) => ENERGY_LABELS[k], energyCount,
     (k) => (k === "nuclear"
       ? '<span class="swatch swatch-diamond" aria-hidden="true"></span>'
-      : `<span class="swatch" style="--swatch:${ENERGY_COLORS[k]}" aria-hidden="true"></span>`));
+      : `<span class="swatch" style="--swatch:${ENERGY_COLORS[k]}" aria-hidden="true"></span>`), false);
   const voltageList = buildOptions("voltage-options", VOLTAGE_ORDER, (k) => VOLTAGE_STYLES[k].label,
     (k) => stats.by_voltage_class?.[k] ?? 0,
-    (k) => `<span class="swatch swatch-line${VOLTAGE_STYLES[k].dashArray ? " dashed" : ""}" style="--swatch:${VOLTAGE_STYLES[k].color}" aria-hidden="true"></span>`);
+    (k) => `<span class="swatch swatch-line${VOLTAGE_STYLES[k].dashArray ? " dashed" : ""}" style="--swatch:${VOLTAGE_STYLES[k].color}" aria-hidden="true"></span>`, true);
   const gapsToggle = document.getElementById("gaps-only");
 
   document.getElementById("stat-facilities-total").textContent = `/ ${fmt(plants.features.length)}`;
@@ -239,7 +240,7 @@ async function main() {
 
     document.getElementById("stat-facilities").textContent = fmt(visibleFacilities);
     document.getElementById("stat-lines").textContent = fmt(visibleLines);
-    document.getElementById("drawer-summary").textContent = `顯示 ${fmt(visibleFacilities)} 座設施、${fmt(visibleLines)} 段電力線`;
+    document.getElementById("drawer-summary").textContent = `顯示 ${fmt(visibleLines)} 段電力線、${fmt(visibleFacilities)} 座設施`;
   }
 
   energyList.addEventListener("change", apply);

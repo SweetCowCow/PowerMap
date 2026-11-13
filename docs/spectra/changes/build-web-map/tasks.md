@@ -25,3 +25,11 @@
 - [x] 5.1 [after: 2.1, 2.2] 依「GitHub Actions 發佈到 Pages」實作 GitHub Pages deployment：新增 `.github/workflows/pages.yml`（push 到 `main` 和 workflow_dispatch 時觸發，依序執行 `make test-web`、`make web`，再 upload 和 deploy `web/`，不跑 Python 資料管線）。README 補上網頁使用方式、`make boundaries`、`make web`、`make test-web` 和網站網址。驗證：用 `actionlint` 或 `gh workflow view` 檢查 workflow 語法（工具不存在時人工對照 design）；README 的指令表包含三個新目標。
 - [x] 5.2 [after: 4.4, 5.1] 依「公開前用 git-filter-repo 改寫公司 email」，先詢問使用者 `handoff.md` 要 commit 還是加進 `.gitignore`，並把網頁相關檔案 commit。接著用 `git bundle` 備份，執行 `uvx git-filter-repo`，用 `--mailmap` 和 `--replace-text` 把公司 email 換成 `<id>+SweetCowCow@users.noreply.github.com`；同時替換工作目錄中本 change 的 `.openspec.yaml`，把 repo 的 `git config user.email` 改成 noreply 信箱，並重新加回 `origin`。驗證：`git log --all --format='%ae %ce' | grep -c <公司網域>` 為 0，`git grep <公司網域> $(git rev-list --all)` 沒有結果，`uv run pytest` 和 `make test-web` 仍然通過。
 - [x] 5.3 [after: 5.2] **向使用者確認後**，force push `main`；**再次確認後**，執行 `gh repo edit --visibility public --accept-visibility-change-consequences`，把 Pages 來源設成 GitHub Actions，並觸發 workflow，完成 GitHub Pages deployment。最後更新 `handoff.md` 裡的 commit hash。驗證：`gh repo view --json visibility` 為 PUBLIC，`gh run list --workflow pages.yml` 最新一次成功，用 DevTools 開啟 `https://sweetcowcow.github.io/PowerMap/` 時 console 沒有錯誤，且地圖顯示設施和線段。
+
+## 6. 使用者回饋調整（2026-11-13）
+
+> 4.1 已完成的 CARTO 深色圖磚，依「外部圖磚改用 OSM 標準圖磚並以 CSS 調暗」由 6.1 取代；4.3 已完成的能源預設全勾和側欄順序，依「側欄以電力線為主，能源預設不勾」由 6.2 調整。變電所另開 change 4，不在本 change。
+
+- [x] 6.1 依「外部圖磚改用 OSM 標準圖磚並以 CSS 調暗」修改 Base layers：移除 CARTO 圖層，改成「OSM 圖磚（調暗）」（`tile.openstreetmap.org`，CSS filter 只套在這個圖磚圖層上），並把 README 和頁面中提到 CARTO 的地方改成 OSM 圖磚。驗證：用 Chrome DevTools 確認預設狀態下沒有請求 `tile.openstreetmap.org` 和 `cartocdn`；切換到 OSM 圖磚後有載入圖磚、截圖確認畫面偏暗且設施和線段顏色不變、attribution 顯示 © OpenStreetMap contributors；`git grep -i carto -- web README.md` 沒有結果。
+- [x] 6.2 依「側欄以電力線為主，能源預設不勾」修改 Energy filter 的預設值和 Legend and footer 的側欄順序：統計電力線在前、電壓篩選 → 只看資料缺口 → 能源篩選，能源預設全部不勾，手機抽屜摘要電力線在前。驗證：DevTools 載入頁面後設施數為 0、線段數為 2,515；按能源的「全選」後設施數為 1,577；側欄 DOM 順序依序為電壓、資料缺口、能源；`make test-web` 通過。
+- [ ] 6.3 [after: 6.1, 6.2] commit 並 push，確認 GitHub Pages deployment 成功。驗證：`gh run list --workflow pages.yml` 最新一次成功，用 DevTools 開啟 `https://sweetcowcow.github.io/PowerMap/`，初始畫面只有電力線、console 沒有錯誤。

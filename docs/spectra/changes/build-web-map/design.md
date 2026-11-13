@@ -35,6 +35,7 @@ change 1、2 已經產出網頁要用的資料，以下是 2026-11-13 實測的�
 - 不做即時發電資料、運轉狀態（除役）標示、變電所圖層
 - 不做 Matplotlib 靜態海報
 - 不做自訂網域、不加網站分析或追蹤碼
+- 不做變電所圖層（另開 change 4）
 
 ## Decisions
 
@@ -93,6 +94,20 @@ change 1、2 已經產出網頁要用的資料，以下是 2026-11-13 實測的�
 
 背景色 `#0b1826`。縣市界用陸地色 `#142534` 填色、`#22384a` 描邊，放在預設的 base layer「縣市界（離線）」。另外提供 base layer「深色圖磚」（CARTO dark_all，標示 © OpenStreetMap contributors © CARTO）。兩者用 Leaflet layers control 切換。
 
+### 外部圖磚改用 OSM 標準圖磚並以 CSS 調暗
+
+**Supersedes**: build-web-map / 底圖預設縣市界，深色圖磚為可切換圖層
+
+預設底圖仍是「縣市界（離線）」。可切換的外部圖磚改為 OSM 標準圖磚（`https://tile.openstreetmap.org/{z}/{x}/{y}.png`，`maxZoom: 19`），圖層名稱「OSM 圖磚（調暗）」，標示 © OpenStreetMap contributors，並移除 CARTO。OSM 標準圖磚是淺色的，所以在這個圖層的 tile 元素上套用 CSS filter（`invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9)`，數值在實作時以截圖調整），讓它和深色介面一致；filter 只套用在圖磚上，不影響電力圖層的顏色。
+
+原因：使用者實際開啟網站時，CARTO 圖磚只回傳一張「需要 API key」的圖片，看不到地圖；原本以為 CARTO 不需要 key 的判斷，只檢查了請求有沒有回應，沒有檢查圖磚內容（2026-11-13）。OSM 圖磚依 OSM Tile Usage Policy 只適合低流量，這個網站只把它當選用圖層，預設不載入。替代方案有三個：保留 CARTO 再加 OSM；只用 OSM 但不調暗（和深色介面對比太強）；維持只用 CARTO。使用者都沒有選。
+
+### 側欄以電力線為主，能源預設不勾
+
+側欄順序改為：標題 → 統計（電力線排在設施前）→ 電力線電壓（預設全勾）→ 只看資料缺口 → 能源（預設全部不勾，含全選／全不選）→ 說明與來源。打開頁面時只看到電力線，設施要自己勾選才會出現。手機抽屜收合時的摘要也改成電力線在前。
+
+原因：使用者主要想看各地的電力線狀況（2026-11-13）。
+
 ### make web 只複製檔案，不觸發資料管線
 
 `make web` 是 phony 目標，它的 recipe 只會建立 `web/data/`，並複製 `plants.geojson`、`lines.geojson`、`stats.json`、`official_diff.csv`、`counties.geojson`。它**不**把資料管線的輸出列為 prerequisite；否則在 CI 上，Makefile 的參數戳記機制會把輸出檔回溯成舊時間，進而觸發完整的資料管線（CI 上沒有 OSM 快照）。來源檔缺少時，`cp` 會失敗並回傳非 0。`make all` 改成 `data web`。`web/data/` 加進 `.gitignore`。
@@ -130,10 +145,10 @@ filter-repo 會移除 `origin`，要重新加回。**force push 和 `gh repo edi
 - 執行 `make web` 後，`web/data/` 有五個檔案；任一來源檔缺少時，指令失敗且回傳非 0。
 - 用 `python -m http.server -d web` 開啟網頁時：
   - 初始視角是台灣本島；預設底圖是縣市界，不發出任何圖磚請求。
-  - 9 個能源勾選框（含全選／全不選）、5 個電壓勾選框和「只看資料缺口」切換，都會即時改變地圖和統計面板的「目前顯示」數量。
+  - 側欄依序為電壓篩選、「只看資料缺口」、能源篩選；5 個電壓勾選框預設全勾，9 個能源勾選框（含全選／全不選）預設全部不勾，所以初始畫面只有電力線、設施數為 0。所有控制項都會即時改變地圖和統計面板的「目前顯示」數量。
   - zoom < 12 時，發電機以各能源顏色的固定大小聚合點顯示；zoom ≥ 12 時，逐支顯示。
   - 點擊設施或線段會出現 Popup，缺值顯示「未填」或「未命名」，不顯示 `null`、`0` 或空白。
-  - 頁尾顯示快照時間（來自 `stats.snapshot`）、OSM ODbL 授權、政府資料開放授權條款第 1 版、CARTO 圖磚標示，以及「本圖不是即時供電圖；設施存在不等於運轉中；圓點大小不代表容量、線寬不代表潮流」。
+  - 頁尾顯示快照時間（來自 `stats.snapshot`）、OSM ODbL 授權、政府資料開放授權條款第 1 版，以及「本圖不是即時供電圖；設施存在不等於運轉中；圓點大小不代表容量、線寬不代表潮流」。
   - 視窗寬度 < 768 px 時，側欄改成底部抽屜，可以展開和收合。
 - push 到 `main` 後，Actions 會執行 `make test-web` 和 `make web`，並發佈到 `https://sweetcowcow.github.io/PowerMap/`。
 
@@ -165,7 +180,7 @@ filter-repo 會移除 `origin`，要重新加回。**force push 和 `gh repo edi
 - [改寫歷史後 commit hash 全部改變，`handoff.md` 和已封存 change 文件中引用的 hash 會失效] → 改寫後更新 `handoff.md`；已封存文件中的 hash 只是歷史紀錄，不改。改寫前先做 bundle 備份，可以還原。
 - [force push 後，其他電腦上的 clone 會和遠端分歧] → 目前只有使用者一人使用；切換前提醒使用者，其他 clone 要重新 clone。
 - [公開後，未來 commit 可能誤帶公司資料] → repo 的 git email 改成 noreply；之後每次 commit 前，都要檢查有沒有公司相關內容。
-- [CDN 或 CARTO 停止服務] → 預設底圖是本地縣市界；Leaflet 和 markercluster 用固定版本加 SRI。
+- [CDN 或 OSM 圖磚伺服器停止服務或限制流量] → 預設底圖是本地縣市界，OSM 圖磚只是選用圖層；Leaflet 和 markercluster 用固定版本加 SRI。
 - [canvas 和 DivIcon 混用時，聚合點的 DOM 數量過多] → 聚合點只在 zoom < 12 出現，數量受 `maxClusterRadius` 限制；用 DevTools 效能面板檢查平移時沒有明顯卡頓。
 - [TGOS 下載網址含版本日期，之後可能失效] → 網址寫成可覆寫的常數（`BOUNDARY_URL`）；輸出檔已經 commit，網頁不受影響。
 
