@@ -20,9 +20,11 @@ LINES     := data/processed/lines.geojson
 SUBSTATIONS := data/processed/substations.geojson
 SUB_DEDUP_LOG := data/processed/substation_dedup_log.csv
 OFFICIAL_POINTS := data/processed/official_points.geojson
+OFFICIAL_STATUS := data/processed/official_status.json
 STATS     := data/processed/stats.json
 CROSSWALK := data/official/crosswalk.csv
 LOCATIONS := data/official/locations.csv
+STATUS_TABLE := data/official/status.csv
 CANDIDATES := data/official/crosswalk_candidates.csv
 BOUNDARY_ZIP := data/raw/boundaries/counties.zip
 COUNTIES  := data/processed/counties.geojson
@@ -62,7 +64,7 @@ all:
 	$(MAKE) data
 	$(MAKE) web
 
-data: $(STATS)
+data: $(STATS) $(OFFICIAL_STATUS)
 
 extract: $(EXTRACT_OUT)
 
@@ -103,7 +105,11 @@ $(LINES): $(EXTRACT_OUT) powermap/lines.py powermap/osm.py powermap/parsers.py p
 $(OFFICIAL_POINTS): $(OFFICIAL) $(wildcard $(CROSSWALK)) $(wildcard $(LOCATIONS)) powermap/official_points.py powermap/extract.py Makefile
 	$(PY) -m powermap.official_points --official $(OFFICIAL) --crosswalk $(CROSSWALK) --locations $(LOCATIONS) --output $(OFFICIAL_POINTS) --main-bbox=$(MAIN_BBOX)
 
-# 9. Stats
+# 9. Operating status (reviewed by hand in data/official/status.csv)
+$(OFFICIAL_STATUS): $(OFFICIAL) $(wildcard $(STATUS_TABLE)) powermap/official_status.py Makefile
+	$(PY) -m powermap.official_status --official $(OFFICIAL) --status $(STATUS_TABLE) --output $(OFFICIAL_STATUS)
+
+# 10. Stats
 $(STATS): $(EXTRACT_OUT) $(FACILITIES_OUT) $(OFFICIAL) $(ENRICH_OUT) $(LINES) $(SUBSTATIONS) $(SUB_DEDUP_LOG) $(OFFICIAL_POINTS) powermap/stats.py Makefile
 	$(PY) -m powermap.stats --plants $(PLANTS) --lines $(LINES) --substations $(SUBSTATIONS) --summary $(SUMMARY) --facilities-meta $(FAC_META) --official $(OFFICIAL) --dedup-log $(DEDUP_LOG) --diff $(DIFF) --unmatched $(UNMATCHED) --official-points $(OFFICIAL_POINTS) --output $(STATS)
 

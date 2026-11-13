@@ -1,0 +1,58 @@
+{
+ "tp-plant:協和發電廠": {
+  "status": "partially_retired",
+  "since": null,
+  "units": "協一、協二機已除役（停止運轉日期待確認）；協三、協四機仍運轉（原訂 2024-12 除役，已延後）",
+  "source": "https://udn.com/news/story/7266/9397802",
+  "checked_at": "2026-11-13",
+  "note": "停止運轉日期待確認"
+ },
+ "tp-plant:大林發電廠": {
+  "status": "partially_retired",
+  "since": "2022-12",
+  "units": "舊一、二號機已拆除；三、四號機已除役；五號機 2022 年底除役後轉為緊急備用；新一、二號機與六號機運轉中",
+  "source": "https://news.pts.org.tw/article/429849",
+  "checked_at": "2026-11-13",
+  "note": "五號機仍偶爾以緊急備用啟動"
+ },
+ "tp-plant:核一廠": {
+  "status": "retired",
+  "since": "2019-07",
+  "units": "一號機 2018-12-05 運轉執照屆期；二號機 2019-07-15 運轉執照屆期，隔日起進入除役期間",
+  "source": "https://www.nusc.gov.tw/share/file/focus/UQbMHfXPSnwccWyra3aNsA__.pdf",
+  "checked_at": "2026-11-13",
+  "note": null
+ },
+ "tp-plant:核三廠": {
+  "status": "retired",
+  "since": "2025-05",
+  "units": "一號機 2024-07-27 運轉執照屆期停機；二號機 2025-05-17 運轉執照屆期停機",
+  "source": "https://www.cna.com.tw/news/afe/202505170134.aspx",
+  "checked_at": "2026-11-13",
+  "note": "核管法修法後可申請再運轉；此處以停機狀態記錄"
+ },
+ "tp-plant:核二廠": {
+  "status": "retired",
+  "since": "2023-03",
+  "units": "一號機 2021-06 底提前停機（執照原訂 2021-12-27 屆期）；二號機 2023-03-14 運轉執照屆期永久停止運轉",
+  "source": "https://www.nusc.gov.tw/webpage/UploadFiles/report_file/202310261507539992.pdf",
+  "checked_at": "2026-11-13",
+  "note": null
+ },
+ "tp-plant:興達發電廠": {
+  "status": "partially_retired",
+  "since": "2025-12",
+  "units": "燃煤一、二號機 2023 年除役；燃煤三號機 2025-12 除役；燃煤四號機預定 2026-12 除役；燃氣機組運轉中",
+  "source": "https://news.pts.org.tw/article/752717",
+  "checked_at": "2026-11-13",
+  "note": null
+ },
+ "tp-plant:龍門廠": {
+  "status": "mothballed",
+  "since": "2015-07",
+  "units": "一、二號機未曾商轉；2015-07 完成封存，後改為資產維護；建廠執照 2020-12-31 屆期失效",
+  "source": "https://www.thenewslens.com/article/85194",
+  "checked_at": "2026-11-13",
+  "note": null
+ }
+}

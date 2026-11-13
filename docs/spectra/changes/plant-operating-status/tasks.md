@@ -1,12 +1,12 @@
 ## 1. 狀態表
 
 - [x] 1.1 依「運轉狀態存成人工確認的 status.csv」，為核一、核二、核三、龍門、協和、興達、大林查公開資料（台電、核安會等官方網頁或新聞稿），整理每座的 `status`、`since`、`units`、`source`、`note`，存成暫存區的草稿表給使用者確認，不直接寫入 repo。驗證：草稿表 7 列都有 http(s) 來源網址和機組說明；查不到可靠來源的欄位寫明「待確認」。
-- [ ] 1.2 [after: 1.1] 使用者確認後，寫入 `data/official/status.csv` 並 commit。驗證：筆數和使用者確認的一致，每列都有 `source` 和 `checked_at`。
+- [x] 1.2 [after: 1.1] 使用者確認後，寫入 `data/official/status.csv` 並 commit。驗證：筆數和使用者確認的一致，每列都有 `source` 和 `checked_at`。
 
 ## 2. 資料管線
 
-- [ ] 2.1 依「資料管線輸出 official_status.json」實作 Official status table validation 和 Official status output：新增 `powermap/official_status.py`，Makefile 新增步驟並納入 `make data`。驗證：`tests/test_official_status.py` 涵蓋驗證範例表 6 列、檔案不存在時輸出 `{}`、核一的輸出範例（含 `note` 為 null）、鍵排序；`uv run pytest` 通過。
-- [ ] 2.2 [after: 1.2, 2.1] 執行 `make data`，確認 `official_status.json` 有 7 個鍵、沒有警告；commit 資料。驗證：鍵數等於 `status.csv` 的有效列數。
+- [x] 2.1 依「資料管線輸出 official_status.json」實作 Official status table validation 和 Official status output：新增 `powermap/official_status.py`，Makefile 新增步驟並納入 `make data`。驗證：`tests/test_official_status.py` 涵蓋驗證範例表 6 列、檔案不存在時輸出 `{}`、核一的輸出範例（含 `note` 為 null）、鍵排序；`uv run pytest` 通過。
+- [x] 2.2 [after: 1.2, 2.1] 執行 `make data`，確認 `official_status.json` 有 7 個鍵、沒有警告；commit 資料。驗證：鍵數等於 `status.csv` 的有效列數。
 
 ## 3. 網頁
 
