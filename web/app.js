@@ -8,13 +8,17 @@ import {
   VOLTAGE_STYLES,
   countVisible,
   escapeHtml,
+  facilityGroupKey,
   facilityPopupHtml,
+  facilityStyle,
   facilityVisible,
+  initialFilters,
   linePopupHtml,
   lineVisible,
   mainPolygonBounds,
   nominatimUrl,
   parseDiffCsv,
+  reserveSlot,
   searchFacilities,
 } from "./lib.js";
 
@@ -23,8 +27,6 @@ import {
 const REQUIRED = ["plants.geojson", "lines.geojson", "stats.json", "counties.geojson"];
 const MAIN_ISLAND = [[21.88, 119.95], [25.32, 122.03]];
 const UNCLUSTER_ZOOM = 12;
-const PLANT_RADIUS = 5;
-const GENERATOR_RADIUS = 3;
 
 const numberFormat = new Intl.NumberFormat("en-US");
 const fmt = (n) => numberFormat.format(n);
@@ -104,22 +106,18 @@ function nuclearIcon() {
 function facilityLayer(feature, renderer, diff) {
   const p = feature.properties;
   const [lon, lat] = feature.geometry.coordinates;
-  let layer;
-  if (p.energy === "nuclear") {
-    layer = L.marker([lat, lon], { icon: nuclearIcon(), pane: "markerPane", keyboard: false });
-  } else {
-    const color = ENERGY_COLORS[p.energy] ?? ENERGY_COLORS.unknown;
-    const mixed = p.energy === "mixed";
-    layer = L.circleMarker([lat, lon], {
+  const style = facilityStyle(p);
+  const layer = style.shape === "diamond"
+    ? L.marker([lat, lon], { icon: nuclearIcon(), pane: "markerPane", keyboard: false })
+    : L.circleMarker([lat, lon], {
       renderer,
-      radius: p.kind === "plant" ? PLANT_RADIUS : GENERATOR_RADIUS,
-      color: mixed ? "#ffffff" : "#0b1826",
-      weight: mixed ? 1.5 : 0.8,
-      dashArray: mixed ? "2 2" : null,
-      fillColor: color,
+      radius: style.radius,
+      color: style.color,
+      weight: style.weight,
+      dashArray: style.dashArray,
+      fillColor: style.fillColor,
       fillOpacity: 0.95,
     });
-  }
   layer.bindPopup(() => facilityPopupHtml(p, diff.get(p.osm_id)), { maxWidth: 320 });
   return layer;
 }
@@ -144,7 +142,7 @@ function buildOptions(listId, order, labelFor, countFor, swatchFor, checked) {
   const list = document.getElementById(listId);
   list.innerHTML = order.map((key) => `
     <li><label>
-      <input type="checkbox" value="${key}"${checked ? " checked" : ""}>
+      <input type="checkbox" value="${key}"${checked(key) ? " checked" : ""}>
       ${swatchFor(key)}
       <span class="option-label">${escapeHtml(labelFor(key))}</span>
       <span class="option-count">${fmt(countFor(key))}</span>
@@ -183,6 +181,7 @@ function setupLocate(map, counties, plants, diff) {
   let facilityHits = [];
   let placeHits = null; // null: not searched; [] or array: Nominatim result; string: message
   let lastNominatim = 0;
+  let pendingQuery = null;
   let highlight = null;
 
   const kindLabel = (p) => (p.kind === "plant" ? "電廠" : "發電機");
@@ -229,18 +228,25 @@ function setupLocate(map, counties, plants, diff) {
     if (!q) return;
     placeHits = "搜尋中…";
     render();
-    const wait = lastNominatim + NOMINATIM_INTERVAL_MS - Date.now();
-    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-    lastNominatim = Date.now();
+    if (q === pendingQuery) return; // same query already in flight
+    pendingQuery = q;
+    // Reserve the slot before waiting, so overlapping submits stay 1 s apart.
+    const slot = reserveSlot(lastNominatim, Date.now(), NOMINATIM_INTERVAL_MS);
+    lastNominatim = slot.last;
+    if (slot.wait > 0) await new Promise((resolve) => setTimeout(resolve, slot.wait));
+    let hits;
     try {
       const res = await fetch(nominatimUrl(q), { headers: { Accept: "application/json" } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (input.value.trim() !== q) return; // the user has typed something else meanwhile
-      placeHits = data.length ? data : `找不到「${q}」，請換個關鍵字。`;
+      hits = data.length ? data : `找不到「${q}」，請換個關鍵字。`;
     } catch {
-      placeHits = "地名搜尋暫時無法使用，請稍後再試。";
+      hits = "地名搜尋暫時無法使用，請稍後再試。";
+    } finally {
+      if (pendingQuery === q) pendingQuery = null;
     }
+    if (input.value.trim() !== q) return; // the user has typed something else meanwhile
+    placeHits = hits;
     render();
   });
 
@@ -253,11 +259,17 @@ function setupLocate(map, counties, plants, diff) {
       const latlng = L.latLng(lat, lon);
       map.setView(latlng, Math.max(map.getZoom(), 15));
       if (highlight) highlight.remove();
-      highlight = L.circleMarker(latlng, { radius: 14, color: "#f0b85a", weight: 2, fill: false, interactive: false }).addTo(map);
+      // Each popup removes only its own ring: opening a new popup closes the old one
+      // synchronously, which must not remove the ring just created.
+      const ring = L.circleMarker(latlng, { radius: 14, color: "#f0b85a", weight: 2, fill: false, interactive: false }).addTo(map);
+      highlight = ring;
       L.popup({ maxWidth: 320 })
         .setLatLng(latlng)
         .setContent(facilityPopupHtml(f.properties, diff.get(f.properties.osm_id)))
-        .on("remove", () => { if (highlight) { highlight.remove(); highlight = null; } })
+        .on("remove", () => {
+          ring.remove();
+          if (highlight === ring) highlight = null;
+        })
         .openOn(map);
     } else if (button.dataset.place !== undefined) {
       const p = placeHits[Number(button.dataset.place)];
@@ -324,10 +336,11 @@ async function main() {
   const facilityItems = plants.features.map((f) => {
     const props = f.properties;
     const layer = facilityLayer(f, facilityRenderer, diff);
+    const key = facilityGroupKey(props);
     let group = plantGroup;
-    if (props.kind === "generator") {
-      if (!clusters.has(props.energy)) clusters.set(props.energy, clusterGroup(props.energy).addTo(map));
-      group = clusters.get(props.energy);
+    if (key !== null) {
+      if (!clusters.has(key)) clusters.set(key, clusterGroup(key).addTo(map));
+      group = clusters.get(key);
     }
     return { props, layer, group };
   });
@@ -336,14 +349,16 @@ async function main() {
   const energyCount = (key) => countVisible(plants.features, (p) => (key === "unknown"
     ? (p.energy_sources ?? []).length === 0
     : (p.energy_sources ?? []).includes(key)));
+  const initial = initialFilters();
   const energyList = buildOptions("energy-options", ENERGY_ORDER, (k) => ENERGY_LABELS[k], energyCount,
     (k) => (k === "nuclear"
       ? '<span class="swatch swatch-diamond" aria-hidden="true"></span>'
-      : `<span class="swatch" style="--swatch:${ENERGY_COLORS[k]}" aria-hidden="true"></span>`), false);
+      : `<span class="swatch" style="--swatch:${ENERGY_COLORS[k]}" aria-hidden="true"></span>`), (k) => initial.energies.has(k));
   const voltageList = buildOptions("voltage-options", VOLTAGE_ORDER, (k) => VOLTAGE_STYLES[k].label,
     (k) => stats.by_voltage_class?.[k] ?? 0,
-    (k) => `<span class="swatch swatch-line${VOLTAGE_STYLES[k].dashArray ? " dashed" : ""}" style="--swatch:${VOLTAGE_STYLES[k].color}" aria-hidden="true"></span>`, true);
+    (k) => `<span class="swatch swatch-line${VOLTAGE_STYLES[k].dashArray ? " dashed" : ""}" style="--swatch:${VOLTAGE_STYLES[k].color}" aria-hidden="true"></span>`, (k) => initial.voltages.has(k));
   const gapsToggle = document.getElementById("gaps-only");
+  gapsToggle.checked = initial.gapsOnly;
 
   document.getElementById("stat-facilities-total").textContent = `/ ${fmt(plants.features.length)}`;
   document.getElementById("stat-lines-total").textContent = `/ ${fmt(lines.features.length)}`;
@@ -374,7 +389,7 @@ async function main() {
       if (!facilityVisible(item.props, filters)) continue;
       visibleFacilities += 1;
       if (item.group === plantGroup) plantGroup.addLayer(item.layer);
-      else perCluster.get(item.props.energy).push(item.layer);
+      else perCluster.get(facilityGroupKey(item.props)).push(item.layer);
     }
     for (const [energy, group] of clusters) {
       group.clearLayers();

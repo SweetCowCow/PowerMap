@@ -9,14 +9,18 @@ import {
   VOLTAGE_STYLES,
   countVisible,
   escapeHtml,
+  facilityGroupKey,
   facilityPopupHtml,
+  facilityStyle,
   facilityVisible,
+  initialFilters,
   formatCapacity,
   linePopupHtml,
   lineVisible,
   mainPolygonBounds,
   nominatimUrl,
   parseDiffCsv,
+  reserveSlot,
   searchFacilities,
 } from "../lib.js";
 
@@ -205,4 +209,55 @@ test("mainPolygonBounds ignores small far-off islands", () => {
   const kaohsiung = { type: "MultiPolygon", coordinates: [square(116.7, 20.7, 0.05), square(120.2, 22.5, 0.8)] };
   assert.deepEqual(mainPolygonBounds(kaohsiung), [[22.5, 120.2], [23.3, 121]]);
   assert.deepEqual(mainPolygonBounds({ type: "Polygon", coordinates: square(121, 25, 0.1) }), [[25, 121], [25.1, 121.1]]);
+});
+
+// --- Defaults, symbols, clustering, request pacing -----------------------------------
+
+test("initial filters: lines on, facilities off, gap mode off", () => {
+  const f = initialFilters();
+  assert.equal(f.energies.size, 0);
+  assert.deepEqual([...f.voltages], VOLTAGE_ORDER);
+  assert.equal(f.gapsOnly, false);
+  assert.equal(facilityVisible({ energy_sources: ["solar"], missing_capacity: true }, f), false);
+  assert.equal(facilityVisible({ energy_sources: [], missing_capacity: true }, f), false);
+  assert.equal(lineVisible({ voltage_class: "missing", missing_voltage: true }, f), true);
+});
+
+test("facility symbols (spec example table)", () => {
+  const solarPlant = facilityStyle({ kind: "plant", energy: "solar" });
+  assert.equal(solarPlant.shape, "circle");
+  assert.equal(solarPlant.fillColor, "#ffd15c");
+  const windGen = facilityStyle({ kind: "generator", energy: "wind" });
+  assert.equal(windGen.fillColor, "#6fe0c0");
+  assert.ok(windGen.radius < solarPlant.radius, "generator radius is smaller than plant radius");
+  const mixed = facilityStyle({ kind: "plant", energy: "mixed" });
+  assert.equal(mixed.fillColor, "#b98ad9");
+  assert.equal(mixed.color, "#ffffff");
+  assert.ok(mixed.dashArray);
+  const nuclear = facilityStyle({ kind: "plant", energy: "nuclear" });
+  assert.equal(nuclear.shape, "diamond");
+  assert.equal(nuclear.color, "#ffffff");
+  assert.equal(nuclear.fillColor, "none");
+  const big = facilityStyle({ kind: "plant", energy: "solar", capacity_mw: 500 });
+  const small = facilityStyle({ kind: "plant", energy: "solar", capacity_mw: 1 });
+  assert.equal(big.radius, small.radius, "radius never depends on capacity");
+});
+
+test("generators cluster per energy, plants never cluster", () => {
+  assert.equal(facilityGroupKey({ kind: "generator", energy: "wind" }), "wind");
+  assert.equal(facilityGroupKey({ kind: "generator", energy: "solar" }), "solar");
+  assert.equal(facilityGroupKey({ kind: "plant", energy: "wind" }), null);
+});
+
+test("reserveSlot keeps overlapping Nominatim requests at least 1 s apart", () => {
+  // Three submits at t=0, 200, 300 ms.
+  let last = 0;
+  const times = [];
+  for (const now of [10_000, 10_200, 10_300]) {
+    const slot = reserveSlot(last, now, 1000);
+    last = slot.last;
+    times.push(now + slot.wait);
+  }
+  assert.deepEqual(times, [10_000, 11_000, 12_000]);
+  assert.deepEqual(reserveSlot(0, 5_000, 1000), { last: 5_000, wait: 0 });
 });

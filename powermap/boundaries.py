@@ -45,10 +45,29 @@ def _quote_url(url: str) -> str:
     return urllib.parse.quote(url, safe=":/?&=%#")
 
 
+def url_record(zip_path: str | Path) -> Path:
+    """Sidecar file that records which URL a zip was downloaded from."""
+    zip_path = Path(zip_path)
+    return zip_path.with_name(zip_path.name + ".url")
+
+
+def recorded_url(zip_path: str | Path) -> str | None:
+    record = url_record(zip_path)
+    return record.read_text(encoding="utf-8").strip() if record.exists() else None
+
+
 def download(url: str, target: str | Path) -> bool:
-    """Download ``url`` to ``target`` unless it exists. Returns True when downloaded."""
+    """Download ``url`` to ``target`` unless it exists. Returns True when downloaded.
+
+    The source URL is written next to the zip (``<zip>.url``) so provenance stays tied to
+    the file actually used, not to whatever URL a later run passes.
+    """
     target = Path(target)
     if target.exists() and target.stat().st_size > 0:
+        recorded = recorded_url(target)
+        if recorded is not None and recorded != url:
+            raise BoundaryError(f"{target} was downloaded from {recorded}; delete it (and {url_record(target).name}) "
+                                f"to download {url}")
         return False
     target.parent.mkdir(parents=True, exist_ok=True)
     part = target.with_name(target.name + ".part")
@@ -58,6 +77,7 @@ def download(url: str, target: str | Path) -> bool:
             while chunk := response.read(1 << 16):
                 out.write(chunk)
         part.rename(target)
+        url_record(target).write_text(url + "\n", encoding="utf-8")
     except BaseException as exc:
         part.unlink(missing_ok=True)
         if isinstance(exc, (urllib.error.URLError, OSError)):
@@ -120,7 +140,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Downloaded {args.zip}")
         else:
             print(f"Boundary zip already present: {args.zip} (delete it to re-download)")
-        collection = build(args.zip, args.url)
+        # Provenance follows the zip actually used (a zip from before URL records keeps the passed URL).
+        collection = build(args.zip, recorded_url(args.zip) or args.url)
     except BoundaryError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

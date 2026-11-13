@@ -53,7 +53,10 @@ $(call mark_stale_if_changed,$(OFFICIAL_PARAMS),OFFICIAL_DIR=$(OFFICIAL_DIR),$(O
 $(call mark_stale_if_changed,$(ENRICH_PARAMS),CAPACITY_DIFF_THRESHOLD=$(CAPACITY_DIFF_THRESHOLD),$(ENRICH_OUT) $(STATS))
 
 .PHONY: all data extract test clean official-download crosswalk-candidates boundaries web test-web
-all: data web
+# Sequential on purpose: under `make -j`, `web` would otherwise copy data before `data` rewrites it.
+all:
+	$(MAKE) data
+	$(MAKE) web
 
 data: $(STATS)
 

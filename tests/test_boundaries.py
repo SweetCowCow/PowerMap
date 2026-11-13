@@ -8,7 +8,7 @@ import geopandas as gpd
 import pytest
 from shapely.geometry import Polygon
 
-from powermap.boundaries import BoundaryError, build, download, main
+from powermap.boundaries import BoundaryError, build, download, main, recorded_url
 
 COUNTIES = {
     "臺北市": (121.5, 25.0),
@@ -115,3 +115,29 @@ def test_main_download_failure_exit_code(tmp_path, capsys):
     assert not target.exists()
     assert not output.exists()
     assert "download failed" in capsys.readouterr().err
+
+
+def test_download_records_source_url(tmp_path):
+    src = make_zip(tmp_path)
+    target = tmp_path / "raw" / "counties.zip"
+    assert download(src.as_uri(), target) is True
+    assert recorded_url(target) == src.as_uri()
+
+
+def test_existing_zip_from_other_url_is_rejected(tmp_path):
+    src = make_zip(tmp_path)
+    target = tmp_path / "raw" / "counties.zip"
+    download(src.as_uri(), target)
+    with pytest.raises(BoundaryError, match="delete it"):
+        download("https://example.test/newer.zip", target)
+    assert download(src.as_uri(), target) is False  # same URL: reuse the zip
+
+
+def test_main_provenance_follows_recorded_url(tmp_path):
+    src = make_zip(tmp_path)
+    target = tmp_path / "raw" / "counties.zip"
+    output = tmp_path / "out" / "counties.geojson"
+    assert main(["--zip", str(target), "--output", str(output), "--url", src.as_uri()]) == 0
+    assert main(["--zip", str(target), "--output", str(output), "--url", "https://example.test/newer.zip"]) == 1
+    data = json.loads(output.read_text(encoding="utf-8"))
+    assert data["source"]["url"] == src.as_uri()

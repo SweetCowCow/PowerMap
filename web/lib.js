@@ -255,3 +255,45 @@ export function mainPolygonBounds(geometry) {
   const lats = best[0].map((c) => c[1]);
   return [[Math.min(...lats), Math.min(...lons)], [Math.max(...lats), Math.max(...lons)]];
 }
+
+/** Default filter state: all voltage classes on, all energies off, gap mode off (lines first). */
+export function initialFilters() {
+  return { energies: new Set(), voltages: new Set(VOLTAGE_ORDER), gapsOnly: false };
+}
+
+export const PLANT_RADIUS = 5;
+export const GENERATOR_RADIUS = 3;
+
+/**
+ * Symbol for a facility. Radius only tells plant from generator; it never depends on capacity.
+ * @returns {{shape: "circle"|"diamond", radius: number, fillColor: string, color: string, weight: number, dashArray: string|null}}
+ */
+export function facilityStyle(props) {
+  const radius = props.kind === "plant" ? PLANT_RADIUS : GENERATOR_RADIUS;
+  if (props.energy === "nuclear") {
+    return { shape: "diamond", radius, fillColor: "none", color: "#ffffff", weight: 2, dashArray: null };
+  }
+  const mixed = props.energy === "mixed";
+  return {
+    shape: "circle",
+    radius,
+    fillColor: ENERGY_COLORS[props.energy] ?? ENERGY_COLORS.unknown,
+    color: mixed ? "#ffffff" : "#0b1826",
+    weight: mixed ? 1.5 : 0.8,
+    dashArray: mixed ? "2 2" : null,
+  };
+}
+
+/** Cluster group key: generators cluster per energy; plants never cluster (null). */
+export function facilityGroupKey(props) {
+  return props.kind === "generator" ? props.energy : null;
+}
+
+/**
+ * Reserve the next Nominatim request slot so requests stay at least `interval` ms apart,
+ * even when submits overlap. Returns the new `last` value and how long to wait.
+ */
+export function reserveSlot(last, now, interval = 1000) {
+  const at = Math.max(now, last + interval);
+  return { last: at, wait: at - now };
+}
