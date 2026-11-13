@@ -28,19 +28,28 @@
       <div class="panel-body" id="panel-body">
         <header class="intro">
           <h1>台灣電力地圖</h1>
-          <p>OpenStreetMap 上標示的電力線與發電設施。虛線是缺電壓的線段，不是沒有線路。發電設施預設不顯示，可在下方依能源勾選。</p>
+          <p>OpenStreetMap 上標示的電力線、變電所與發電設施。虛線是缺電壓的線段，不是沒有線路。發電設施預設不顯示，可在下方依能源勾選。</p>
         </header>
 
 
         <fieldset class="filter" id="voltage-filter">
-          <legend>電力線電壓</legend>
+          <legend>電力線與變電所電壓</legend>
           <ul class="options" id="voltage-options"></ul>
+          <ul class="options substation-option">
+            <li><label>
+              <input type="checkbox" id="substations-toggle" checked>
+              <span class="swatch swatch-square" aria-hidden="true"></span>
+              <span class="option-label">變電所</span>
+              <span class="option-count" id="substations-count"></span>
+            </label></li>
+          </ul>
+          <p class="filter-note">變電所的顏色跟著電壓等級；灰色空心方形是缺電壓的變電所。電壓勾選也會一起開關變電所。</p>
         </fieldset>
 
         <label class="gap-toggle">
           <input type="checkbox" id="gaps-only" role="switch">
           <span class="gap-track" aria-hidden="true"></span>
-          <span>只看資料缺口<small>只顯示缺容量的設施與缺電壓的線</small></span>
+          <span>只看資料缺口<small>只顯示缺電壓的線與變電所，以及缺容量的設施</small></span>
         </label>
 
         <fieldset class="filter" id="energy-filter">
@@ -61,10 +70,12 @@
           <h2 class="stats-title" id="stats-title">目前顯示</h2>
           <p class="stats-hint">數字會隨上方的電壓、資料缺口與能源開關即時變動。</p>
           <p class="stat"><span class="stat-num" id="stat-lines" aria-live="polite">–</span><span class="stat-of" id="stat-lines-total"></span> 段電力線</p>
+          <p class="stat"><span class="stat-num" id="stat-substations" aria-live="polite">–</span><span class="stat-of" id="stat-substations-total"></span> 座變電所</p>
           <p class="stat"><span class="stat-num" id="stat-facilities" aria-live="polite">–</span><span class="stat-of" id="stat-facilities-total"></span> 座發電設施</p>
           <h3 class="stats-sub">全部資料（不隨篩選變動）</h3>
           <dl class="gaps">
             <div><dt>缺電壓的線段</dt><dd id="stat-missing-voltage">–</dd></div>
+            <div><dt>缺電壓的變電所</dt><dd id="stat-substations-missing">–</dd></div>
             <div><dt>缺容量的設施</dt><dd id="stat-missing-capacity">–</dd></div>
             <div><dt>台電有、OSM 沒標的電廠</dt><dd id="stat-unmatched">–</dd></div>
           </dl>

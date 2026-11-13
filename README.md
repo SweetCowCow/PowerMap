@@ -29,7 +29,7 @@ uv sync
 | `make official-download` | 連網下載一份新的台電官方資料快照到 `data/official/raw/<日期>/`（下載後請 commit） |
 | `make crosswalk-candidates` | 產生 `data/official/crosswalk_candidates.csv`，供人工建立對照表 |
 | `make boundaries` | 連網下載內政部國土測繪中心的縣市界線（data.gov.tw 7442），簡化後輸出 `data/processed/counties.geojson`（下載後請 commit）。不屬於 `make data` |
-| `make web` | 把 `data/processed/` 的五個檔案複製到 `web/data/`，不會觸發資料管線 |
+| `make web` | 把 `data/processed/` 的六個檔案複製到 `web/data/`，不會觸發資料管線 |
 | `make all` | `make data` 加上 `make web` |
 | `make test` | 執行資料管線的單元測試（pytest） |
 | `make test-web` | 執行網頁的單元測試（`node --test`，不需要 npm 套件） |
@@ -53,7 +53,8 @@ uv sync
 | --- | --- |
 | `data/processed/plants.geojson` | 設施點（電廠與獨立發電機），含官方對照欄位 `official_id`、`energy_primary` |
 | `data/processed/lines.geojson` | 電力線（line、minor_line、cable），每個 OSM way 一筆 |
-| `data/processed/stats.json` | 快照時間、數量、缺值、分類與排除統計 |
+| `data/processed/substations.geojson` | 變電所（`power=substation`），每個 OSM 物件一個點（面取內部代表點），含名稱、營運者、種類（`substation` 標籤）、最高電壓與電壓分級（和電力線相同的 5 級）。不去重 |
+| `data/processed/stats.json` | 快照時間、數量、缺值、分類與排除統計；變電所另有 `substations`、`substations_missing_voltage`、`substations_by_voltage_class` |
 | `data/processed/dedup_log.csv` | 每一筆歸併、排除、合併的紀錄（含依官方對照表合併的 `official_same_plant`），方便人工複查 |
 | `data/processed/official_diff.csv` | OSM 與官方容量差異超過門檻的電廠 |
 | `data/processed/unmatched.csv` | 沒有對應到 OSM 的官方電廠：`no_osm`（已審閱，OSM 沒有）、`unreviewed`（尚未審閱）、`osm_missing`（對照表的 OSM id 已失效） |
@@ -69,6 +70,7 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 - 預設底圖是縣市界輪廓，不請求外部圖磚；右上角可以切換成 OSM 標準圖磚（調暗或原色，只當選用圖層，符合 OSM 圖磚的低流量使用政策）或國土測繪中心正射影像。
 - 地圖上方的定位列可以切換縣市、搜尋電廠名稱（本地資料，邊打字邊列出），或按 Enter 搜尋地名與地址（送到 OSM Nominatim）。
 - 側欄以電力線為主：電壓篩選預設全勾；發電設施的能源篩選預設全部不勾，需要時再勾選。
+- 變電所畫成方形，顏色跟著電壓等級（缺電壓為灰色空心方形），跟著電壓勾選與「只看資料缺口」一起開關，另有「變電所」開關；搜尋框也能找變電所名稱。
 - 能源篩選以 `energy_sources` 為準：多種能源的設施，只要勾選其中一種就會顯示。
 - 獨立發電機依能源分組聚合，聚合點大小固定、數字是支數，放大到 zoom 12 以上就逐支顯示；電廠不聚合。
 - 「只看資料缺口」只顯示缺容量的設施與缺電壓的線，並和能源、電壓篩選同時生效。

@@ -256,9 +256,46 @@ export function mainPolygonBounds(geometry) {
   return [[Math.min(...lats), Math.min(...lons)], [Math.max(...lats), Math.max(...lons)]];
 }
 
-/** Default filter state: all voltage classes on, all energies off, gap mode off (lines first). */
+/** Default filter state: all voltage classes and substations on, all energies off, gap mode off (lines first). */
 export function initialFilters() {
-  return { energies: new Set(), voltages: new Set(VOLTAGE_ORDER), gapsOnly: false };
+  return { energies: new Set(), voltages: new Set(VOLTAGE_ORDER), gapsOnly: false, substations: true };
+}
+
+// --- Substations ------------------------------------------------------------------------
+
+export const SUBSTATION_TYPE_LABELS = {
+  transmission: "輸電",
+  distribution: "配電",
+  minor_distribution: "小型配電",
+  transition: "架空與地下轉接",
+  industrial: "工業用",
+  traction: "鐵路供電",
+  converter: "換流",
+};
+
+/** Type label for the `substation` tag; `null` and `yes` are unknown. */
+export function substationTypeLabel(value) {
+  if (value === null || value === undefined || value === "yes") return MISSING;
+  return SUBSTATION_TYPE_LABELS[value] ?? value;
+}
+
+/** A substation follows the substation toggle, the voltage filter and gap mode. */
+export function substationVisible(props, filters) {
+  if (!filters.substations) return false;
+  if (filters.gapsOnly && props.missing_voltage !== true) return false;
+  return filters.voltages.has(props.voltage_class);
+}
+
+/** Popup HTML for a substation. */
+export function substationPopupHtml(props) {
+  const kv = props.voltage_max_kv;
+  const rows = [
+    row("種類", escapeHtml(`變電所・${substationTypeLabel(props.substation)}`)),
+    row("最高電壓", escapeHtml(kv === null || kv === undefined ? MISSING : `${formatNumber(kv)} kV`)),
+    row("原始 voltage", props.voltage_raw ? `<code>${escapeHtml(props.voltage_raw)}</code>` : MISSING),
+    row("營運者", escapeHtml(props.operator ?? MISSING)),
+  ];
+  return `<div class="popup"><h3>${escapeHtml(props.name ?? "未命名變電所")}</h3><table>${rows.join("")}</table>${osmLink(props.osm_url)}</div>`;
 }
 
 export const PLANT_RADIUS = 5;

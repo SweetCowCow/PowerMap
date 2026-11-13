@@ -22,6 +22,9 @@ import {
   parseDiffCsv,
   reserveSlot,
   searchFacilities,
+  substationPopupHtml,
+  substationTypeLabel,
+  substationVisible,
 } from "../lib.js";
 
 const filters = (energies, voltages = VOLTAGE_ORDER, gapsOnly = false) => ({
@@ -218,6 +221,7 @@ test("initial filters: lines on, facilities off, gap mode off", () => {
   assert.equal(f.energies.size, 0);
   assert.deepEqual([...f.voltages], VOLTAGE_ORDER);
   assert.equal(f.gapsOnly, false);
+  assert.equal(f.substations, true);
   assert.equal(facilityVisible({ energy_sources: ["solar"], missing_capacity: true }, f), false);
   assert.equal(facilityVisible({ energy_sources: [], missing_capacity: true }, f), false);
   assert.equal(lineVisible({ voltage_class: "missing", missing_voltage: true }, f), true);
@@ -260,4 +264,44 @@ test("reserveSlot keeps overlapping Nominatim requests at least 1 s apart", () =
   }
   assert.deepEqual(times, [10_000, 11_000, 12_000]);
   assert.deepEqual(reserveSlot(0, 5_000, 1000), { last: 5_000, wait: 0 });
+});
+
+// --- Substations ----------------------------------------------------------------------
+
+test("substation visibility (spec example table)", () => {
+  const all = VOLTAGE_ORDER;
+  const f = (voltages, substations, gapsOnly) => ({ energies: new Set(), voltages: new Set(voltages), substations, gapsOnly });
+  const ehv = { voltage_class: "ehv", missing_voltage: false };
+  const hv = { voltage_class: "hv", missing_voltage: false };
+  const missing = { voltage_class: "missing", missing_voltage: true };
+  assert.equal(substationVisible(ehv, f(all, true, false)), true);
+  assert.equal(substationVisible(ehv, f(all, false, false)), false);
+  assert.equal(substationVisible(ehv, f(all.filter((v) => v !== "ehv"), true, false)), false);
+  assert.equal(substationVisible(missing, f(all, true, true)), true);
+  assert.equal(substationVisible(hv, f(all, true, true)), false);
+});
+
+test("substation type labels (spec example table)", () => {
+  assert.equal(substationTypeLabel("transmission"), "輸電");
+  assert.equal(substationTypeLabel("distribution"), "配電");
+  assert.equal(substationTypeLabel("minor_distribution"), "小型配電");
+  assert.equal(substationTypeLabel("traction"), "鐵路供電");
+  assert.equal(substationTypeLabel("yes"), "未填");
+  assert.equal(substationTypeLabel(null), "未填");
+  assert.equal(substationTypeLabel("windfarm"), "windfarm");
+});
+
+test("substation popup shows missing values and escapes text", () => {
+  const html = substationPopupHtml({ name: null, operator: null, substation: null, voltage_max_kv: null, voltage_raw: null,
+    osm_url: "https://www.openstreetmap.org/way/1" });
+  assert.match(html, /未命名變電所/);
+  assert.match(html, /<th>最高電壓<\/th><td>未填<\/td>/);
+  assert.match(html, /<th>營運者<\/th><td>未填<\/td>/);
+  assert.doesNotMatch(html, /null|undefined/);
+  const named = substationPopupHtml({ name: "<i>龍潭</i>", operator: "台電", substation: "transmission", voltage_max_kv: 345,
+    voltage_raw: "345000;161000", osm_url: "https://www.openstreetmap.org/way/2" });
+  assert.match(named, /&lt;i&gt;龍潭&lt;\/i&gt;/);
+  assert.match(named, /變電所・輸電/);
+  assert.match(named, /345 kV/);
+  assert.match(named, /<code>345000;161000<\/code>/);
 });
