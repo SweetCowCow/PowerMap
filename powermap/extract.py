@@ -22,7 +22,7 @@ from pathlib import Path
 import osmium
 from shapely.geometry import MultiPolygon, box, mapping, shape
 
-from powermap.osm import FACILITY_VALUES, POWER_VALUES, osm_ref
+from powermap.osm import AREA_VALUES, FACILITY_VALUES, POWER_VALUES, osm_ref
 from powermap.parsers import classify_energy
 
 #: (min_lon, min_lat, max_lon, max_lat). West edge 119.3 keeps Changhua
@@ -119,7 +119,7 @@ def extract(path: str | Path, scope: ScopeFilter | None = None) -> ExtractResult
     processor = (
         osmium.FileProcessor(str(path))
         .with_filter(osmium.filter.KeyFilter("power"))
-        .with_areas(osmium.filter.TagFilter(("power", "plant"), ("power", "generator")))
+        .with_areas(osmium.filter.TagFilter(*(("power", value) for value in AREA_VALUES)))
     )
     for obj in processor:
         tags = dict(obj.tags)
@@ -132,13 +132,13 @@ def extract(path: str | Path, scope: ScopeFilter | None = None) -> ExtractResult
                 candidates.append(("node", obj.id, tags, geom))
             elif obj.is_way():
                 geom = shape(json.loads(factory.create_linestring(obj)))
-                if power in FACILITY_VALUES and obj.is_closed():
+                if power in AREA_VALUES and obj.is_closed():
                     # Wait for the assembled area; fall back to the line if none comes.
                     pending_closed_ways[obj.id] = (tags, geom)
                 else:
                     candidates.append(("way", obj.id, tags, geom))
             elif obj.is_area():
-                if power not in FACILITY_VALUES:
+                if power not in AREA_VALUES:
                     continue
                 if not obj.from_way():
                     area_relation_ids.add(obj.orig_id())  # before geometry, which may fail
@@ -150,7 +150,7 @@ def extract(path: str | Path, scope: ScopeFilter | None = None) -> ExtractResult
                     candidates.append(("relation", obj.orig_id(), tags, geom))
             elif obj.is_relation():
                 is_multipolygon = tags.get("type") == "multipolygon"
-                if is_multipolygon and power in FACILITY_VALUES:
+                if is_multipolygon and power in AREA_VALUES:
                     multipolygon_ids.add(obj.id)
                 else:
                     geometryless_relations += 1

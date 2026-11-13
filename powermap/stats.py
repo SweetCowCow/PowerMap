@@ -7,6 +7,7 @@ Usage::
 
     python -m powermap.stats --plants data/processed/plants.geojson \
         --lines data/processed/lines.geojson \
+        --substations data/processed/substations.geojson \
         --summary data/interim/extract_summary.json \
         --facilities-meta data/interim/facilities_meta.json \
         --official data/interim/official_plants.json \
@@ -56,6 +57,7 @@ def compute_stats(
     facilities_meta: dict,
     built_at: datetime | None = None,
     official: dict | None = None,
+    substations: list[dict] | None = None,
 ) -> dict:
     by_energy = {key: 0 for key in ENERGY_CATEGORIES}
     by_source = {key: 0 for key in SOURCE_CATEGORIES}
@@ -82,9 +84,22 @@ def compute_stats(
         "excluded_rooftop_solar": facilities_meta.get("excluded_rooftop_solar", 0),
         "excluded_outside_main_island": {region: excluded.get(region, 0) for region in REGION_NAMES},
     }
+    if substations is not None:
+        stats.update(compute_substation_stats(substations))
     if official is not None:
         stats["official"] = official
     return stats
+
+
+def compute_substation_stats(substations: list[dict]) -> dict:
+    by_class = {key: 0 for key in VOLTAGE_CLASSES}
+    for feature in substations:
+        by_class[feature["properties"]["voltage_class"]] += 1
+    return {
+        "substations": len(substations),
+        "substations_missing_voltage": sum(f["properties"]["missing_voltage"] for f in substations),
+        "substations_by_voltage_class": by_class,
+    }
 
 
 def format_stats(stats: dict) -> str:
@@ -97,6 +112,14 @@ def format_stats(stats: dict) -> str:
         f"  rooftop/small solar excl.: {stats['excluded_rooftop_solar']}",
         f"Lines:                       {stats['lines']}",
         f"  missing voltage:           {stats['lines_missing_voltage']}",
+    ]
+    if "substations" in stats:
+        lines += [
+            f"Substations:                 {stats['substations']}",
+            f"  missing voltage:           {stats['substations_missing_voltage']}",
+            "  by voltage class:          " + ", ".join(f"{k} {v}" for k, v in stats["substations_by_voltage_class"].items()),
+        ]
+    lines += [
         f"Excluded outside main island (raw OSM features): {excluded}",
         "By energy:         " + ", ".join(f"{k} {v}" for k, v in stats["by_energy"].items()),
         "By energy source:  " + ", ".join(f"{k} {v}" for k, v in stats["by_energy_source"].items()),
@@ -125,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--plants", required=True)
     parser.add_argument("--lines", required=True)
+    parser.add_argument("--substations", help="substations.geojson; adds the substation counts")
     parser.add_argument("--summary", required=True)
     parser.add_argument("--facilities-meta", required=True)
     parser.add_argument("--official", required=True)
@@ -148,6 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         json.loads(Path(args.summary).read_text(encoding="utf-8")),
         json.loads(Path(args.facilities_meta).read_text(encoding="utf-8")),
         official=official,
+        substations=_load_features(args.substations) if args.substations else None,
     )
     Path(args.output).write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
     print(format_stats(stats))

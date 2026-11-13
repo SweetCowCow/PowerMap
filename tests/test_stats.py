@@ -14,6 +14,10 @@ def line(voltage_class):
     return {"properties": {"voltage_class": voltage_class, "missing_voltage": voltage_class == "missing"}}
 
 
+def substation(voltage_class):
+    return {"properties": {"voltage_class": voltage_class, "missing_voltage": voltage_class == "missing"}}
+
+
 SUMMARY = {"snapshot": "2026-11-11T21:22:47Z", "excluded_by_region": {"penghu": 57, "kinmen": 7, "matsu": 8, "other": 122}}
 
 
@@ -46,13 +50,14 @@ def test_mixed_counts_under_each_source():
 def test_cli_prints_summary(tmp_path, capsys):
     (tmp_path / "p.geojson").write_text(json.dumps({"features": [plant("wind", ["wind"])]}))
     (tmp_path / "l.geojson").write_text(json.dumps({"features": [line("mv")]}))
+    (tmp_path / "sub.geojson").write_text(json.dumps({"features": [substation("hv"), substation("missing")]}))
     (tmp_path / "s.json").write_text(json.dumps(SUMMARY))
     (tmp_path / "m.json").write_text(json.dumps({"excluded_rooftop_solar": 2}))
     (tmp_path / "o.json").write_text(json.dumps({"source_dir": "raw/2026-11-12", "plants": [{}, {}]}))
     (tmp_path / "d.csv").write_text("action,kept_osm_id,dropped_osm_id,reason,distance_m\n")
     (tmp_path / "x.csv").write_text("official_id,osm_id,osm_capacity_mw,official_capacity_mw,diff_ratio\n")
     (tmp_path / "u.csv").write_text("official_id,name,county,capacity_mw,reason\nipp:A,A,,1,unreviewed\n")
-    args = ["--plants", str(tmp_path / "p.geojson"), "--lines", str(tmp_path / "l.geojson"),
+    args = ["--plants", str(tmp_path / "p.geojson"), "--lines", str(tmp_path / "l.geojson"), "--substations", str(tmp_path / "sub.geojson"),
             "--summary", str(tmp_path / "s.json"), "--facilities-meta", str(tmp_path / "m.json"),
             "--official", str(tmp_path / "o.json"), "--dedup-log", str(tmp_path / "d.csv"),
             "--diff", str(tmp_path / "x.csv"), "--unmatched", str(tmp_path / "u.csv"),
@@ -63,6 +68,8 @@ def test_cli_prints_summary(tmp_path, capsys):
     stats = json.loads((tmp_path / "stats.json").read_text())
     assert stats["built_at"].endswith("Z") and stats["official"]["unmatched"]["unreviewed"] == 1
     assert "Official plants:             2" in out
+    assert stats["substations"] == 2 and stats["substations_missing_voltage"] == 1
+    assert "Substations:                 2" in out
 
 
 def test_official_counts_agree_with_reports():
@@ -80,3 +87,25 @@ def test_official_counts_agree_with_reports():
                         "capacity_discrepancies": 1,
                         "unmatched": {"no_osm": 1, "unreviewed": 2, "osm_missing": 0}}
     assert compute_stats(plants, [], SUMMARY, {}, official=official)["official"]["unmatched"]["unreviewed"] == 2
+
+
+def test_substation_counts():
+    stats = compute_stats([], [], SUMMARY, {}, substations=[substation("ehv"), substation("missing"), substation("missing")])
+    assert stats["substations"] == 3
+    assert stats["substations_missing_voltage"] == 2
+    assert stats["substations_by_voltage_class"] == {"ehv": 1, "hv": 0, "mv": 0, "lv": 0, "missing": 2}
+
+
+def test_no_substations():
+    stats = compute_stats([], [], SUMMARY, {}, substations=[])
+    assert stats["substations"] == 0
+    assert set(stats["substations_by_voltage_class"].values()) == {0}
+
+
+def test_substation_fields_do_not_change_existing_ones():
+    plants, lines = [plant("solar", ["solar"])], [line("hv"), line("missing")]
+    before = compute_stats(plants, lines, SUMMARY, {})
+    after = compute_stats(plants, lines, SUMMARY, {}, substations=[substation("hv")])
+    for key, value in before.items():
+        if key != "built_at":
+            assert after[key] == value, key

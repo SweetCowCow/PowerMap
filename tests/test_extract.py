@@ -34,13 +34,49 @@ def test_closed_cable_way_stays_line(tmp_path):
     assert _by_id(result)[("way", 7)]["geometry"]["type"] == "LineString"
 
 
-def test_substation_is_excluded(tmp_path):
+def test_substation_is_extracted(tmp_path):
     b = OsmBuilder()
     b.way(square(*MAIN), {"power": "substation"}, way_id=8, closed=True)
+    b.node(*MAIN, tags={"power": "substation"}, node_id=902)
+    b.node(*MAIN, tags={"power": "generator"}, node_id=901)
+    result = extract(b.write(tmp_path / "a.osm.pbf"))
+    features = _by_id(result)
+    assert sorted(features) == [("node", 901), ("node", 902), ("way", 8)]
+    assert features[("way", 8)]["geometry"]["type"] == "Polygon"
+    assert features[("node", 902)]["geometry"]["type"] == "Point"
+    assert result.counts["substation"] == {"Point": 1, "Polygon": 1}
+
+
+def test_tower_is_excluded(tmp_path):
+    b = OsmBuilder()
     b.node(*MAIN, tags={"power": "tower"}, node_id=900)
     b.node(*MAIN, tags={"power": "generator"}, node_id=901)
     result = extract(b.write(tmp_path / "a.osm.pbf"))
     assert list(_by_id(result)) == [("node", 901)]
+
+
+def test_substation_multipolygon_relation(tmp_path):
+    b = OsmBuilder()
+    outer = b.way(square(*MAIN), {}, way_id=40, closed=True)
+    b.relation(41, [("w", outer, "outer")], {"type": "multipolygon", "power": "substation"})
+    result = extract(b.write(tmp_path / "a.osm.pbf"))
+    assert _by_id(result)[("relation", 41)]["geometry"]["type"] == "Polygon"
+
+
+def test_substation_in_kinmen_is_excluded(tmp_path):
+    b = OsmBuilder()
+    b.way(square(118.35, 24.45), {"power": "substation"}, way_id=50, closed=True)
+    result = extract(b.write(tmp_path / "a.osm.pbf"))
+    assert result.features == []
+    assert result.excluded_by_region["kinmen"] == 1
+    assert result.excluded_by_power["substation"] == 1
+
+
+def test_substation_does_not_count_as_mixed_facility(tmp_path):
+    b = OsmBuilder()
+    b.way(square(*MAIN), {"power": "substation", "substation:source": "coal;gas"}, way_id=60, closed=True)
+    result = extract(b.write(tmp_path / "a.osm.pbf"))
+    assert result.mixed_energy_facilities == 0
 
 
 def test_multipolygon_relation_plant(tmp_path):

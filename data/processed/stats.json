@@ -1,6 +1,6 @@
 {
   "snapshot": "2026-11-11T21:22:47Z",
-  "built_at": "2026-11-12T15:27:42Z",
+  "built_at": "2026-11-13T03:33:01Z",
   "facilities": 1577,
   "lines": 2515,
   "lines_missing_voltage": 1059,
@@ -36,10 +36,19 @@
   },
   "excluded_rooftop_solar": 7,
   "excluded_outside_main_island": {
-    "penghu": 57,
+    "penghu": 60,
     "kinmen": 7,
     "matsu": 8,
     "other": 122
+  },
+  "substations": 788,
+  "substations_missing_voltage": 351,
+  "substations_by_voltage_class": {
+    "ehv": 31,
+    "hv": 207,
+    "mv": 177,
+    "lv": 22,
+    "missing": 351
   },
   "official": {
     "source_dir": "data/official/raw/2026-11-12",

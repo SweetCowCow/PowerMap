@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-POWER_VALUES = ("plant", "generator", "line", "minor_line", "cable")
+POWER_VALUES = ("plant", "generator", "substation", "line", "minor_line", "cable")
 FACILITY_VALUES = ("plant", "generator")
+# Values whose closed ways and multipolygon relations are assembled into areas.
+AREA_VALUES = ("plant", "generator", "substation")
 LINE_VALUES = ("line", "minor_line", "cable")
 
 _PREFIX = {"node": "n", "way": "w", "relation": "r"}
