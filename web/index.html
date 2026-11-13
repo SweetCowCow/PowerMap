@@ -100,6 +100,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"
           integrity="sha512-OFs3W4DIZ5ZkrDhBFtsCP6JXtMEDGmhl0QPlmWYBJay40TT1n3gt2Xuw8Pf/iezgW9CdabjkNChRqozl/YADmg=="
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js"
+          onerror="var b=document.getElementById('banner');b.textContent='地圖程式載入失敗，請重新整理頁面。';b.hidden=false;"></script>
 </body>
 </html>
