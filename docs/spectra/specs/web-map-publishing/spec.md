@@ -8,17 +8,42 @@ Build the static web map from committed data files and publish it to GitHub Page
 
 ### Requirement: Static site build
 
-The system SHALL provide `make web`, which creates `web/data/` and copies `plants.geojson`, `lines.geojson`, `stats.json`, `official_diff.csv` and `counties.geojson` from `data/processed/` into it. `make web` SHALL NOT trigger any data pipeline step, even when pipeline outputs are older than their inputs or when no OSM snapshot exists. When a source file is missing, `make web` SHALL exit non-zero. `web/data/` SHALL be ignored by git. `make all` SHALL run `data` then `web`.
+The system SHALL provide `make web`, which creates `web/data/` and copies `plants.geojson`, `lines.geojson`, `substations.geojson`, `stats.json`, `official_diff.csv` and `counties.geojson` from `data/processed/` into it. `make web` SHALL NOT trigger any data pipeline step, even when pipeline outputs are older than their inputs or when no OSM snapshot exists. When a source file is missing, `make web` SHALL exit non-zero. `web/data/` SHALL be ignored by git. `make all` SHALL run `data` then `web`.
 
 #### Scenario: Build without OSM snapshot
 
 - **WHEN** `make web` runs in a fresh clone with no `data/raw/taiwan-latest.osm.pbf`
-- **THEN** it copies the five files and does not run uv or any pipeline module
+- **THEN** it copies the six files and does not run uv or any pipeline module
 
 #### Scenario: Missing source
 
-- **WHEN** `data/processed/counties.geojson` does not exist
+- **WHEN** `data/processed/substations.geojson` does not exist
 - **THEN** `make web` exits non-zero
+
+
+<!-- @trace
+source: add-substations
+updated: 2026-11-13
+code:
+  - Makefile
+  - README.md
+  - powermap/stats.py
+  - data/processed/stats.json
+  - powermap/substations.py
+  - powermap/osm.py
+  - .github/workflows/pages.yml
+  - web/app.js
+  - web/index.html
+  - web/lib.js
+  - powermap/extract.py
+  - web/style.css
+  - data/processed/substations.geojson
+tests:
+  - web/tests/lib.test.js
+  - tests/test_substations.py
+  - tests/test_stats.py
+  - tests/test_extract.py
+-->
 
 ---
 ### Requirement: Web unit tests

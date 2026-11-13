@@ -117,7 +117,7 @@ tests:
 ---
 ### Requirement: Power feature extraction
 
-The system SHALL extract nodes, ways, and relations whose `power` tag is one of `plant`, `generator`, `line`, `minor_line`, `cable` and that pass the main island scope filter into `data/interim/power.geojsonseq`, one GeoJSON Feature per line. Each Feature SHALL carry all original OSM tags plus `osm_type` (`node`, `way`, or `relation`) and the original numeric OSM id. For `plant` and `generator`, a closed way or a multipolygon relation SHALL be emitted as a Polygon or MultiPolygon. For `line`, `minor_line`, and `cable`, ways SHALL be emitted as LineString. Features with other `power` values, including `substation` and `tower`, SHALL NOT be emitted.
+The system SHALL extract nodes, ways, and relations whose `power` tag is one of `plant`, `generator`, `substation`, `line`, `minor_line`, `cable` and that pass the main island scope filter into `data/interim/power.geojsonseq`, one GeoJSON Feature per line. Each Feature SHALL carry all original OSM tags plus `osm_type` (`node`, `way`, or `relation`) and the original numeric OSM id. For `plant`, `generator` and `substation`, a closed way or a multipolygon relation SHALL be emitted as a Polygon or MultiPolygon, and a node as a Point. For `line`, `minor_line`, and `cable`, ways SHALL be emitted as LineString. Features with other `power` values, including `tower`, SHALL NOT be emitted. Adding `substation` SHALL NOT change which `plant`, `generator`, `line`, `minor_line` or `cable` Features are emitted, and SHALL NOT change the count of multi-source facilities.
 
 #### Scenario: Closed plant way becomes a polygon
 
@@ -129,46 +129,44 @@ The system SHALL extract nodes, ways, and relations whose `power` tag is one of 
 - **WHEN** a closed way is tagged `power=cable`
 - **THEN** its Feature in `power.geojsonseq` has a LineString geometry
 
-#### Scenario: Substation is excluded
+#### Scenario: Substation is extracted
 
-- **WHEN** a way is tagged `power=substation`
+- **WHEN** a closed way is tagged `power=substation` and a node is tagged `power=substation`
+- **THEN** `power.geojsonseq` has a Polygon Feature for the way and a Point Feature for the node
+
+#### Scenario: Tower is excluded
+
+- **WHEN** a node is tagged `power=tower`
 - **THEN** no Feature for it appears in `power.geojsonseq`
+
+#### Scenario: Substation outside the main island is excluded
+
+- **WHEN** a substation lies entirely within the Kinmen box
+- **THEN** it is not emitted and the summary counts it under `kinmen` and under `power` value `substation`
 
 
 <!-- @trace
-source: build-power-data-pipeline
-updated: 2026-11-12
+source: add-substations
+updated: 2026-11-13
 code:
-  - tests/osm_builder.py
-  - scripts/download.sh
-  - powermap/osm.py
-  - tests/__init__.py
-  - uv.lock
-  - data/processed/.gitkeep
-  - pyproject.toml
-  - .python-version
   - Makefile
-  - data/raw/.gitkeep
-  - powermap/lines.py
   - README.md
-  - powermap/extract.py
-  - data/processed/plants.geojson
-  - data/processed/dedup_log.csv
-  - data/processed/stats.json
   - powermap/stats.py
-  - powermap/parsers.py
-  - powermap/geo.py
-  - powermap/__init__.py
-  - data/interim/.gitkeep
-  - data/processed/lines.geojson
-  - powermap/facilities.py
+  - data/processed/stats.json
+  - powermap/substations.py
+  - powermap/osm.py
+  - .github/workflows/pages.yml
+  - web/app.js
+  - web/index.html
+  - web/lib.js
+  - powermap/extract.py
+  - web/style.css
+  - data/processed/substations.geojson
 tests:
-  - tests/test_extract.py
-  - tests/test_facilities.py
+  - web/tests/lib.test.js
+  - tests/test_substations.py
   - tests/test_stats.py
-  - tests/test_parsers.py
-  - tests/test_download.py
-  - tests/test_lines.py
+  - tests/test_extract.py
 -->
 
 ---
