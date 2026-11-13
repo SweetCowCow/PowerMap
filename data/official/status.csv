@@ -1,0 +1,8 @@
+official_id,status,since,units,source,checked_at,note
+tp-plant:核一廠,retired,2019-07,一號機 2018-12-05 運轉執照屆期；二號機 2019-07-15 運轉執照屆期，隔日起進入除役期間,https://www.nusc.gov.tw/share/file/focus/UQbMHfXPSnwccWyra3aNsA__.pdf,2026-11-13,
+tp-plant:核二廠,retired,2023-03,一號機 2021-06 底提前停機（執照原訂 2021-12-27 屆期）；二號機 2023-03-14 運轉執照屆期永久停止運轉,https://www.nusc.gov.tw/webpage/UploadFiles/report_file/202310261507539992.pdf,2026-11-13,
+tp-plant:核三廠,retired,2025-05,一號機 2024-07-27 運轉執照屆期停機；二號機 2025-05-17 運轉執照屆期停機,https://www.cna.com.tw/news/afe/202505170134.aspx,2026-11-13,核管法修法後可申請再運轉；此處以停機狀態記錄
+tp-plant:龍門廠,mothballed,2015-07,一、二號機未曾商轉；2015-07 完成封存，後改為資產維護；建廠執照 2020-12-31 屆期失效,https://www.thenewslens.com/article/85194,2026-11-13,
+tp-plant:協和發電廠,partially_retired,,協一、協二機已除役（停止運轉日期待確認）；協三、協四機仍運轉（原訂 2024-12 除役，已延後）,https://udn.com/news/story/7266/9397802,2026-11-13,停止運轉日期待確認
+tp-plant:興達發電廠,partially_retired,2025-12,燃煤一、二號機 2023 年除役；燃煤三號機 2025-12 除役；燃煤四號機預定 2026-12 除役；燃氣機組運轉中,https://news.pts.org.tw/article/752717,2026-11-13,
+tp-plant:大林發電廠,partially_retired,2022-12,舊一、二號機已拆除；三、四號機已除役；五號機 2022 年底除役後轉為緊急備用；新一、二號機與六號機運轉中,https://news.pts.org.tw/article/429849,2026-11-13,五號機仍偶爾以緊急備用啟動
