@@ -14,7 +14,10 @@ import {
   formatCapacity,
   linePopupHtml,
   lineVisible,
+  mainPolygonBounds,
+  nominatimUrl,
   parseDiffCsv,
+  searchFacilities,
 } from "../lib.js";
 
 const filters = (energies, voltages = VOLTAGE_ORDER, gapsOnly = false) => ({
@@ -167,4 +170,39 @@ test("formatCapacity", () => {
   assert.equal(formatCapacity(1210), "1,210 MW");
   assert.equal(formatCapacity(4984.2), "4,984.2 MW");
   assert.equal(formatCapacity(0.04), "0.04 MW");
+});
+
+// --- Location tools ------------------------------------------------------------------
+
+const named = (name) => ({ properties: { name } });
+
+test("searchFacilities matches names (spec example table)", () => {
+  const features = [named("大潭發電廠"), named("大潭風力"), named(null), named("Taichung Power Plant"), named("台中電廠")];
+  assert.deepEqual(searchFacilities(features, "大潭").map((f) => f.properties.name), ["大潭發電廠", "大潭風力"]);
+  assert.deepEqual(searchFacilities(features, "taichung").map((f) => f.properties.name), ["Taichung Power Plant"]);
+  assert.deepEqual(searchFacilities(features, ""), []);
+  assert.deepEqual(searchFacilities(features, "   "), []);
+});
+
+test("searchFacilities respects the limit", () => {
+  const features = Array.from({ length: 20 }, (_, i) => named(`光電 ${i}`));
+  assert.equal(searchFacilities(features, "光電").length, 8);
+  assert.equal(searchFacilities(features, "光電", 3).length, 3);
+});
+
+test("nominatimUrl restricts to Taiwan and encodes the query", () => {
+  const url = new URL(nominatimUrl(" 台北車站 & 1號 "));
+  assert.equal(url.origin + url.pathname, "https://nominatim.openstreetmap.org/search");
+  assert.equal(url.searchParams.get("countrycodes"), "tw");
+  assert.equal(url.searchParams.get("format"), "jsonv2");
+  assert.equal(url.searchParams.get("limit"), "5");
+  assert.equal(url.searchParams.get("q"), "台北車站 & 1號");
+  assert.ok(!nominatimUrl("a&b").includes("q=a&b"));
+});
+
+test("mainPolygonBounds ignores small far-off islands", () => {
+  const square = (x, y, size) => [[[x, y], [x + size, y], [x + size, y + size], [x, y + size], [x, y]]];
+  const kaohsiung = { type: "MultiPolygon", coordinates: [square(116.7, 20.7, 0.05), square(120.2, 22.5, 0.8)] };
+  assert.deepEqual(mainPolygonBounds(kaohsiung), [[22.5, 120.2], [23.3, 121]]);
+  assert.deepEqual(mainPolygonBounds({ type: "Polygon", coordinates: square(121, 25, 0.1) }), [[25, 121], [25.1, 121.1]]);
 });

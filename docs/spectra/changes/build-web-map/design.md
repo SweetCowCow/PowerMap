@@ -36,6 +36,8 @@ change 1、2 已經產出網頁要用的資料，以下是 2026-11-13 實測的�
 - 不做 Matplotlib 靜態海報
 - 不做自訂網域、不加網站分析或追蹤碼
 - 不做變電所圖層（另開 change 4）
+- 不做「我的位置」定位（使用者沒有選）
+- 不做 Esri 影像
 
 ## Decisions
 
@@ -108,6 +110,30 @@ change 1、2 已經產出網頁要用的資料，以下是 2026-11-13 實測的�
 
 原因：使用者主要想看各地的電力線狀況（2026-11-13）。
 
+### 底圖增加原色 OSM 與國土測繪中心正射影像
+
+底圖改為四個選項，依序為：縣市界（離線，預設）、OSM 圖磚（調暗）、OSM 圖磚（原色）、正射影像（國土測繪中心）。
+
+- 原色 OSM 和調暗版用同一組圖磚網址，只是不加 `osm-dim` class。
+- 正射影像用國土測繪中心 WMTS：`https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}`。注意網址中是先 y 再 x。標示「正射影像 © 內政部國土測繪中心」，授權為政府資料開放授權條款第 1 版。
+
+2026-11-13 實測：PHOTO2 和 Esri World Imagery 都回傳真正的影像，下載台北 z13 的圖磚並人工檢視確認。採用 PHOTO2，因為它是政府開放資料、授權清楚，台灣解析度高。Esri World Imagery 授權條款較模糊，不採用。PHOTO2 在台灣以外沒有影像，但本網站只涵蓋台灣。
+
+### 定位工具放在地圖上方
+
+地圖左上角（縮放鈕右側）放一個定位列，手機版放在畫面頂端，包含：
+
+- **縣市快速切換**：下拉選單列出 `counties.geojson` 的 19 個縣市，選取後 `fitBounds` 到該縣市範圍。不需要外部服務。
+- **搜尋框**：輸入時，即時比對本地設施的 `name`（不分大小寫，包含即算），列出最多 8 筆電廠或發電機，只顯示有名稱的。選取後地圖移到該設施（zoom 15），並在該點開啟 Popup。即使該設施因能源篩選而隱藏，也會用獨立的 `L.popup` 顯示，並畫一個暫時的高亮圓圈。
+- **地名或地址搜尋**：按 Enter 或「搜尋地名」按鈕時，才向 OSM Nominatim 查詢（`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=tw&accept-language=zh-TW&limit=5&q=...`），列出最多 5 筆結果，選取後 `fitBounds` 到結果的 `boundingbox`。
+  - 依 Nominatim 使用政策，不做邊打字邊查詢，兩次查詢至少相隔 1 秒，並標示「地名搜尋：© OpenStreetMap contributors（Nominatim）」。
+  - 搜尋框下方註明輸入的文字會送到 Nominatim。
+  - 查詢失敗或沒有結果時，在結果區顯示明確訊息（例如「找不到『xxx』，請換個關鍵字」或「地名搜尋暫時無法使用」），不跳出 alert。
+
+設施名稱比對和 Nominatim 網址組裝寫在 `lib.js`（`searchFacilities(features, query, limit)`、`nominatimUrl(query)`），用 `node --test` 測試。地圖操作和 fetch 留在 `app.js`。
+
+替代方案：用 Leaflet 外掛（例如 leaflet-control-geocoder），會多一個 CDN 依賴，而且很難和本地設施搜尋整合在同一個搜尋框，所以不採用。
+
 ### make web 只複製檔案，不觸發資料管線
 
 `make web` 是 phony 目標，它的 recipe 只會建立 `web/data/`，並複製 `plants.geojson`、`lines.geojson`、`stats.json`、`official_diff.csv`、`counties.geojson`。它**不**把資料管線的輸出列為 prerequisite；否則在 CI 上，Makefile 的參數戳記機制會把輸出檔回溯成舊時間，進而觸發完整的資料管線（CI 上沒有 OSM 快照）。來源檔缺少時，`cp` 會失敗並回傳非 0。`make all` 改成 `data web`。`web/data/` 加進 `.gitignore`。
@@ -158,6 +184,8 @@ filter-repo 會移除 `origin`，要重新加回。**force push 和 `gh repo edi
 - `filters` 的形狀：`{ energies: Set<string>, voltages: Set<string>, gapsOnly: boolean }`。
 
 **失敗模式**
+
+- Nominatim 查詢失敗、逾時或沒有結果時，在搜尋結果區顯示明確訊息，地圖不移動。
 
 - 任一資料檔 fetch 失敗時，在地圖上方顯示錯誤橫幅，寫出失敗的檔名，不顯示空白地圖。
 - `official_diff.csv` 載入失敗不阻擋頁面，Popup 只是不顯示差距。

@@ -203,3 +203,55 @@ export function linePopupHtml(props) {
   const title = VOLTAGE_STYLES[props.voltage_class]?.label ?? "電力線";
   return `<div class="popup"><h3>${escapeHtml(title)}</h3><table>${rows.join("")}</table>${osmLink(props.osm_url)}</div>`;
 }
+
+/**
+ * Facilities whose name contains `query` (case-insensitive), skipping unnamed ones.
+ * @returns {object[]} up to `limit` GeoJSON features
+ */
+export function searchFacilities(features, query, limit = 8) {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const out = [];
+  for (const f of features) {
+    const name = f.properties.name;
+    if (name && name.toLowerCase().includes(q)) {
+      out.push(f);
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
+}
+
+/** Nominatim search URL restricted to Taiwan (usage policy: only on explicit submit). */
+export function nominatimUrl(query) {
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    countrycodes: "tw",
+    "accept-language": "zh-TW",
+    limit: "5",
+    q: query.trim(),
+  });
+  return `https://nominatim.openstreetmap.org/search?${params}`;
+}
+
+/** Planar area of a lon/lat ring (shoelace); only used to compare polygon sizes. */
+function ringArea(ring) {
+  let sum = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    sum += (ring[j][0] - ring[i][0]) * (ring[j][1] + ring[i][1]);
+  }
+  return Math.abs(sum / 2);
+}
+
+/**
+ * Bounds `[[south, west], [north, east]]` of the largest polygon of a (Multi)Polygon, so a county
+ * jump ignores far-off islands (e.g. 高雄市 includes 東沙島 and 太平島).
+ */
+export function mainPolygonBounds(geometry) {
+  const polygons = geometry.type === "MultiPolygon" ? geometry.coordinates : [geometry.coordinates];
+  let best = polygons[0];
+  for (const poly of polygons) if (ringArea(poly[0]) > ringArea(best[0])) best = poly;
+  const lons = best[0].map((c) => c[0]);
+  const lats = best[0].map((c) => c[1]);
+  return [[Math.min(...lats), Math.min(...lons)], [Math.max(...lats), Math.max(...lons)]];
+}

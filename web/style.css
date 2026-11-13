@@ -289,6 +289,71 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 /* OSM standard tiles are light: invert and rotate hue so roads/water keep their hue but sit on a dark ground. */
 .osm-dim { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6); }
 
+/* --- Locate bar ----------------------------------------------------------------------- */
+
+.locate {
+  position: absolute;
+  z-index: 1050; /* above Leaflet controls (1000), below the mobile drawer (1100) */
+  top: 10px;
+  left: 56px;
+  width: min(440px, calc(100% - 128px));
+}
+
+.locate-row { display: flex; gap: 6px; }
+
+.locate select, .search input, .search button {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  height: 36px;
+}
+
+.locate select { flex: none; padding: 0 8px; max-width: 120px; }
+
+.search { flex: 1; display: flex; min-width: 0; }
+.search input { flex: 1; min-width: 0; padding: 0 10px; border-radius: 6px 0 0 6px; }
+.search input::placeholder { color: var(--muted); }
+.search button { flex: none; padding: 0 12px; border-left: 0; border-radius: 0 6px 6px 0; cursor: pointer; color: var(--accent); }
+.search button:hover { background: #17304b; }
+.locate select:focus-visible, .search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.search-results {
+  margin-top: 6px;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  padding: 6px 0;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+}
+
+.search-results ul { list-style: none; margin: 0; padding: 0; }
+
+.search-results button {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: none;
+  border: 0;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.search-results button span { color: var(--muted); font-size: 12px; flex: none; }
+.search-results button:hover, .search-results button:focus-visible { background: #17304b; outline: none; }
+.results-head { margin: 6px 12px 2px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.results-empty, .results-note { margin: 2px 12px 6px; color: var(--muted); font-size: 13px; }
+.results-note { font-size: 12px; }
+
 /* --- Mobile: bottom drawer ---------------------------------------------------------- */
 
 @media (max-width: 767px) {
@@ -332,6 +397,11 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
   .panel:not(.open) .panel-body { display: none; }
 
   .leaflet-bottom { bottom: 64px; }
+
+  .locate { left: 10px; width: calc(100% - 70px); }
+  .locate select { max-width: 96px; }
+  .search button { padding: 0 8px; }
+  .leaflet-top.leaflet-left { top: 48px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

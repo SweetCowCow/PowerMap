@@ -33,3 +33,10 @@
 - [x] 6.1 依「外部圖磚改用 OSM 標準圖磚並以 CSS 調暗」修改 Base layers：移除 CARTO 圖層，改成「OSM 圖磚（調暗）」（`tile.openstreetmap.org`，CSS filter 只套在這個圖磚圖層上），並把 README 和頁面中提到 CARTO 的地方改成 OSM 圖磚。驗證：用 Chrome DevTools 確認預設狀態下沒有請求 `tile.openstreetmap.org` 和 `cartocdn`；切換到 OSM 圖磚後有載入圖磚、截圖確認畫面偏暗且設施和線段顏色不變、attribution 顯示 © OpenStreetMap contributors；`git grep -i carto -- web README.md` 沒有結果。
 - [x] 6.2 依「側欄以電力線為主，能源預設不勾」修改 Energy filter 的預設值和 Legend and footer 的側欄順序：統計電力線在前、電壓篩選 → 只看資料缺口 → 能源篩選，能源預設全部不勾，手機抽屜摘要電力線在前。驗證：DevTools 載入頁面後設施數為 0、線段數為 2,515；按能源的「全選」後設施數為 1,577；側欄 DOM 順序依序為電壓、資料缺口、能源；`make test-web` 通過。
 - [x] 6.3 [after: 6.1, 6.2] commit 並 push，確認 GitHub Pages deployment 成功。驗證：`gh run list --workflow pages.yml` 最新一次成功，用 DevTools 開啟 `https://sweetcowcow.github.io/PowerMap/`，初始畫面只有電力線、console 沒有錯誤。
+
+## 7. 底圖與定位工具（2026-11-13 使用者回饋）
+
+- [x] 7.1 依「底圖增加原色 OSM 與國土測繪中心正射影像」擴充 Base layers：layers control 依序為縣市界（離線）、OSM 圖磚（調暗）、OSM 圖磚（原色）、正射影像；README 的資料來源補上國土測繪中心正射影像。驗證：用 DevTools 依序切換三個外部底圖，確認各自有請求 `tile.openstreetmap.org` 或 `wmts.nlsc.gov.tw`，**並截圖人工確認畫面是真正的地圖或影像，而不是錯誤圖片**；原色 OSM 圖磚元素沒有 `osm-dim` class；attribution 顯示國土測繪中心。
+- [x] 7.2 依「定位工具放在地圖上方」在 `web/lib.js` 實作 `searchFacilities` 和 `nominatimUrl`。驗證：`web/tests/lib.test.js` 涵蓋 Location tools 規格中設施比對範例表的 3 列，以及 `nominatimUrl` 含 `countrycodes=tw`、`format=jsonv2`、`limit=5`，並對中文與特殊字元做 URL 編碼；`make test-web` 通過。
+- [x] 7.3 [after: 7.1, 7.2] 實作 Location tools 的畫面：縣市下拉選單、搜尋框（輸入時列出本地設施；Enter 或「搜尋地名」按鈕才查 Nominatim，兩次查詢至少相隔 1 秒，註明文字會送到 Nominatim）、選取後移動地圖和開啟 Popup，以及失敗和沒有結果時的訊息；桌機和手機版面都可以操作。驗證：用 DevTools 選「臺東縣」後畫面移到臺東；在能源全部不勾的狀態下搜尋「嘉惠」並選取，地圖移過去並開啟 Popup；輸入「台北車站」不按 Enter 時，network 沒有 Nominatim 請求，按 Enter 後才有，選取結果後地圖移過去；搜尋「xyzxyz」顯示找不到；在 1280×800 和手機寬度各截圖檢查，console 沒有錯誤。
+- [ ] 7.4 [after: 7.3] commit 並 push，確認 GitHub Pages deployment 成功，並在正式網址重做 7.1 的切換底圖檢查和 7.3 的嘉惠搜尋。驗證：`gh run list --workflow pages.yml` 最新一次成功；DevTools 在 `https://sweetcowcow.github.io/PowerMap/` 檢查通過，console 沒有錯誤。

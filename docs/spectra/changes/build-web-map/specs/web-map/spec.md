@@ -20,7 +20,7 @@ The web page SHALL load `data/plants.geojson`, `data/lines.geojson`, `data/stats
 
 ### Requirement: Base layers
 
-The map SHALL use a `#0b1826` background and SHALL show the county outlines from `counties.geojson` as the default base layer, labelled 縣市界（離線）, without requesting any map tiles. A second base layer labelled OSM 圖磚（調暗） SHALL use the OpenStreetMap standard tiles from `tile.openstreetmap.org`, darkened with a CSS filter applied only to that tile layer, with the attribution "© OpenStreetMap contributors". The page SHALL NOT request CARTO tiles. The initial view SHALL fit the Taiwan main island. The page SHALL NOT offer Kinmen, Matsu or Penghu jump controls.
+The map SHALL use a `#0b1826` background and SHALL show the county outlines from `counties.geojson` as the default base layer, labelled 縣市界（離線）, without requesting any map tiles. A second base layer labelled OSM 圖磚（調暗） SHALL use the OpenStreetMap standard tiles from `tile.openstreetmap.org`, darkened with a CSS filter applied only to that tile layer, with the attribution "© OpenStreetMap contributors". A third base layer labelled OSM 圖磚（原色） SHALL use the same OpenStreetMap tiles without the filter. A fourth base layer labelled 正射影像 SHALL use the 內政部國土測繪中心 PHOTO2 WMTS orthophoto tiles with the attribution "正射影像 © 內政部國土測繪中心". The page SHALL NOT request CARTO tiles. The initial view SHALL fit the Taiwan main island. The page SHALL NOT offer Kinmen, Matsu or Penghu jump controls.
 
 #### Scenario: Default view makes no tile requests
 
@@ -31,6 +31,45 @@ The map SHALL use a `#0b1826` background and SHALL show the county outlines from
 
 - **WHEN** the user selects OSM 圖磚（調暗） in the layers control
 - **THEN** OSM tiles load beneath the power layers with the darkening filter, power symbols keep their colours, and the attribution "© OpenStreetMap contributors" is shown
+
+#### Scenario: Orthophoto layer
+
+- **WHEN** the user selects 正射影像 in the layers control
+- **THEN** tiles load from `wmts.nlsc.gov.tw` beneath the power layers and the attribution names 內政部國土測繪中心
+
+### Requirement: Location tools
+
+The page SHALL provide a county selector listing every county in `counties.geojson`; selecting one SHALL fit the map to that county's bounds. The page SHALL provide a search box that, while the user types, lists up to 8 facilities whose `name` contains the query (case-insensitive), ignoring facilities without a name; selecting a result SHALL move the map to that facility and open its popup even when the facility is hidden by the filters. When the user presses Enter or the place-search button, the page SHALL query OSM Nominatim restricted to Taiwan and list up to 5 results; selecting one SHALL fit the map to its bounding box. The page SHALL NOT send a Nominatim request while the user is typing, SHALL wait at least 1 second between Nominatim requests, and SHALL state that place-search text is sent to Nominatim. A failed or empty Nominatim search SHALL show a message in the result list and SHALL NOT move the map.
+
+#### Scenario: Jump to a county
+
+- **WHEN** the user selects 臺東縣 in the county selector
+- **THEN** the map view fits the bounds of the 臺東縣 feature
+
+#### Scenario: Facility name search
+
+##### Example: facility matches
+
+| Query | Facilities | Results |
+| --- | --- | --- |
+| `大潭` | 大潭發電廠, 大潭風力, null-named generator | 大潭發電廠, 大潭風力 |
+| `taichung` | Taichung Power Plant, 台中電廠 | Taichung Power Plant |
+| `` (empty) | any | no results |
+
+#### Scenario: Hidden facility from search
+
+- **WHEN** all energy checkboxes are unchecked and the user selects 嘉惠發電廠 from the search results
+- **THEN** the map moves to it and its popup opens
+
+#### Scenario: No typing requests to Nominatim
+
+- **WHEN** the user types `台北車站` without pressing Enter
+- **THEN** no request is sent to `nominatim.openstreetmap.org`
+
+#### Scenario: Empty place search
+
+- **WHEN** Nominatim returns an empty array for `xyzxyz`
+- **THEN** the result list shows that nothing was found and the map does not move
 
 ### Requirement: Facility symbols
 
