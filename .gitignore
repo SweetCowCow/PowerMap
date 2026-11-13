@@ -20,3 +20,6 @@ data/interim/*
 
 # Web map data (copied by `make web`)
 web/data/
+
+# Local handoff notes (not published)
+handoff.md
