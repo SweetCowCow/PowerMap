@@ -46,4 +46,4 @@
 > 6.2 已完成的「統計在篩選上方」依「統計區塊移到篩選下方並標示會隨篩選變動」由 8.1 調整。
 
 - [x] 8.1 依「統計區塊移到篩選下方並標示會隨篩選變動」修改 Legend and footer 的側欄順序和 Statistics panel：統計移到能源篩選之後、說明與來源之前；分成「目前顯示」（註明會隨篩選變動，數字改變時有顏色提示，reduced motion 時不播放）和「全部資料」（三個固定總數）。驗證：DevTools 確認側欄 DOM 順序為 voltage-filter、gap-toggle、energy-filter、stats、credits；勾選太陽能後設施數改變，且數字元素在 0.6 秒內帶有提示 class；1280×800 截圖確認版面；`make test-web` 通過。
-- [ ] 8.2 [after: 8.1] commit 並 push，確認 GitHub Pages deployment 成功，並在正式網址確認統計區塊位置。驗證：`gh run list --workflow pages.yml` 最新一次成功；DevTools 在 `https://sweetcowcow.github.io/PowerMap/` 確認側欄順序、console 沒有錯誤。
+- [x] 8.2 [after: 8.1] commit 並 push，確認 GitHub Pages deployment 成功，並在正式網址確認統計區塊位置。驗證：`gh run list --workflow pages.yml` 最新一次成功；DevTools 在 `https://sweetcowcow.github.io/PowerMap/` 確認側欄順序、console 沒有錯誤。
