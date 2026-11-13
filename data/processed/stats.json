@@ -1,6 +1,6 @@
 {
   "snapshot": "2026-11-11T21:22:47Z",
-  "built_at": "2026-11-13T06:24:15Z",
+  "built_at": "2026-11-13T06:50:52Z",
   "facilities": 1570,
   "lines": 2515,
   "lines_missing_voltage": 1059,
@@ -63,6 +63,7 @@
       "no_osm": 36,
       "unreviewed": 0,
       "osm_missing": 0
-    }
+    },
+    "located": 30
   }
 }

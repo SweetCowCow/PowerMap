@@ -14,6 +14,7 @@ Usage::
         --dedup-log data/processed/dedup_log.csv \
         --diff data/processed/official_diff.csv \
         --unmatched data/processed/unmatched.csv \
+        --official-points data/processed/official_points.geojson \
         --output data/processed/stats.json
 """
 
@@ -34,7 +35,7 @@ UNMATCHED_REASONS = ("no_osm", "unreviewed", "osm_missing")
 
 
 def compute_official(plants: list[dict], official: dict, dedup_rows: list[dict], diff_rows: list[dict],
-                     unmatched_rows: list[dict]) -> dict:
+                     unmatched_rows: list[dict], *, official_points: list[dict]) -> dict:
     """Official cross-validation counts, all taken from the output files."""
     official_ids = [f["properties"]["official_id"] for f in plants if f["properties"].get("official_id")]
     return {
@@ -47,6 +48,7 @@ def compute_official(plants: list[dict], official: dict, dedup_rows: list[dict],
         "merged": sum(1 for r in dedup_rows if r["action"] == "official_same_plant"),
         "capacity_discrepancies": len(diff_rows),
         "unmatched": {reason: sum(1 for r in unmatched_rows if r["reason"] == reason) for reason in UNMATCHED_REASONS},
+        "located": len(official_points),
     }
 
 
@@ -125,7 +127,8 @@ def format_stats(stats: dict) -> str:
         lines += [
             f"Official plants:             {o['plants']} (linked {o['linked']}, capacity filled {o['capacity_filled']}, "
             f"merged {o['merged']}, discrepancies {o['capacity_discrepancies']})",
-            "  unmatched:                 " + ", ".join(f"{k} {v}" for k, v in o["unmatched"].items()),
+            "  unmatched:                 " + ", ".join(f"{k} {v}" for k, v in o["unmatched"].items())
+            + f" (located {o['located']})",
         ]
     return "\n".join(lines)
 
@@ -150,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dedup-log", required=True)
     parser.add_argument("--diff", required=True)
     parser.add_argument("--unmatched", required=True)
+    parser.add_argument("--official-points", required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args(argv)
 
@@ -160,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         _load_csv(args.dedup_log),
         _load_csv(args.diff),
         _load_csv(args.unmatched),
+        official_points=_load_features(args.official_points),
     )
     stats = compute_stats(
         plants,

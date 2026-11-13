@@ -18,8 +18,10 @@ UNMATCHED := data/processed/unmatched.csv
 DIFF      := data/processed/official_diff.csv
 LINES     := data/processed/lines.geojson
 SUBSTATIONS := data/processed/substations.geojson
+OFFICIAL_POINTS := data/processed/official_points.geojson
 STATS     := data/processed/stats.json
 CROSSWALK := data/official/crosswalk.csv
+LOCATIONS := data/official/locations.csv
 CANDIDATES := data/official/crosswalk_candidates.csv
 BOUNDARY_ZIP := data/raw/boundaries/counties.zip
 COUNTIES  := data/processed/counties.geojson
@@ -48,7 +50,7 @@ OFFICIAL_PARAMS   := data/interim/official.params
 ENRICH_PARAMS     := data/interim/enrich.params
 mark_stale_if_changed = $(shell mkdir -p $(dir $(1)); [ "$$(cat $(1) 2>/dev/null)" = "$(2)" ] \
 	|| { echo "$(2)" > $(1); for f in $(3); do [ -f "$$f" ] && touch -t 200001010000 "$$f"; done; })
-$(call mark_stale_if_changed,$(EXTRACT_PARAMS),MAIN_BBOX=$(MAIN_BBOX),$(EXTRACT_OUT) $(FACILITIES_OUT) $(ENRICH_OUT) $(LINES) $(SUBSTATIONS) $(STATS))
+$(call mark_stale_if_changed,$(EXTRACT_PARAMS),MAIN_BBOX=$(MAIN_BBOX),$(EXTRACT_OUT) $(FACILITIES_OUT) $(ENRICH_OUT) $(LINES) $(SUBSTATIONS) $(OFFICIAL_POINTS) $(STATS))
 $(call mark_stale_if_changed,$(FACILITIES_PARAMS),ROOFTOP_THRESHOLD_MW=$(ROOFTOP_THRESHOLD_MW) DEDUP_DISTANCE_M=$(DEDUP_DISTANCE_M),$(FACILITIES_OUT) $(ENRICH_OUT) $(STATS))
 $(call mark_stale_if_changed,$(OFFICIAL_PARAMS),OFFICIAL_DIR=$(OFFICIAL_DIR),$(OFFICIAL) $(ENRICH_OUT) $(STATS))
 $(call mark_stale_if_changed,$(ENRICH_PARAMS),CAPACITY_DIFF_THRESHOLD=$(CAPACITY_DIFF_THRESHOLD),$(ENRICH_OUT) $(STATS))
@@ -96,9 +98,13 @@ $(LINES): $(EXTRACT_OUT) powermap/lines.py powermap/osm.py powermap/parsers.py p
 $(SUBSTATIONS): $(EXTRACT_OUT) powermap/substations.py powermap/osm.py powermap/parsers.py Makefile
 	$(PY) -m powermap.substations --input $(SEQ) --output $(SUBSTATIONS)
 
-# 8. Stats
-$(STATS): $(EXTRACT_OUT) $(FACILITIES_OUT) $(OFFICIAL) $(ENRICH_OUT) $(LINES) $(SUBSTATIONS) powermap/stats.py Makefile
-	$(PY) -m powermap.stats --plants $(PLANTS) --lines $(LINES) --substations $(SUBSTATIONS) --summary $(SUMMARY) --facilities-meta $(FAC_META) --official $(OFFICIAL) --dedup-log $(DEDUP_LOG) --diff $(DIFF) --unmatched $(UNMATCHED) --output $(STATS)
+# 8. Estimated official locations (reviewed by hand in data/official/locations.csv)
+$(OFFICIAL_POINTS): $(OFFICIAL) $(wildcard $(CROSSWALK)) $(wildcard $(LOCATIONS)) powermap/official_points.py powermap/extract.py Makefile
+	$(PY) -m powermap.official_points --official $(OFFICIAL) --crosswalk $(CROSSWALK) --locations $(LOCATIONS) --output $(OFFICIAL_POINTS) --main-bbox=$(MAIN_BBOX)
+
+# 9. Stats
+$(STATS): $(EXTRACT_OUT) $(FACILITIES_OUT) $(OFFICIAL) $(ENRICH_OUT) $(LINES) $(SUBSTATIONS) $(OFFICIAL_POINTS) powermap/stats.py Makefile
+	$(PY) -m powermap.stats --plants $(PLANTS) --lines $(LINES) --substations $(SUBSTATIONS) --summary $(SUMMARY) --facilities-meta $(FAC_META) --official $(OFFICIAL) --dedup-log $(DEDUP_LOG) --diff $(DIFF) --unmatched $(UNMATCHED) --official-points $(OFFICIAL_POINTS) --output $(STATS)
 
 # Official open data snapshot (network; creates data/official/raw/<date>/, commit it)
 official-download:

@@ -57,20 +57,34 @@ def test_cli_prints_summary(tmp_path, capsys):
     (tmp_path / "d.csv").write_text("action,kept_osm_id,dropped_osm_id,reason,distance_m\n")
     (tmp_path / "x.csv").write_text("official_id,osm_id,osm_capacity_mw,official_capacity_mw,diff_ratio\n")
     (tmp_path / "u.csv").write_text("official_id,name,county,capacity_mw,reason\nipp:A,A,,1,unreviewed\n")
+    (tmp_path / "op.geojson").write_text(json.dumps({"features": [official_point()] * 2}))
     args = ["--plants", str(tmp_path / "p.geojson"), "--lines", str(tmp_path / "l.geojson"), "--substations", str(tmp_path / "sub.geojson"),
             "--summary", str(tmp_path / "s.json"), "--facilities-meta", str(tmp_path / "m.json"),
             "--official", str(tmp_path / "o.json"), "--dedup-log", str(tmp_path / "d.csv"),
             "--diff", str(tmp_path / "x.csv"), "--unmatched", str(tmp_path / "u.csv"),
-            "--output", str(tmp_path / "stats.json")]
+            "--official-points", str(tmp_path / "op.geojson"), "--output", str(tmp_path / "stats.json")]
     assert main(args) == 0
     out = capsys.readouterr().out
     assert out.startswith("=== Statistics ===") and "Facilities:                  1" in out
     stats = json.loads((tmp_path / "stats.json").read_text())
     assert stats["built_at"].endswith("Z") and stats["official"]["unmatched"]["unreviewed"] == 1
     assert "Official plants:             2" in out
+    assert stats["official"]["located"] == 2 and "(located 2)" in out
     assert stats["substations"] == 2 and stats["substations_missing_voltage"] == 1
     assert "Substations:                 2" in out
     assert "  missing voltage:           1" in out.split("Substations:")[1].splitlines()[1]
+
+
+def official_point():
+    return {"type": "Feature", "geometry": {"type": "Point", "coordinates": [120.6, 24.2]},
+            "properties": {"official_id": "tp-re:X", "precision": "site"}}
+
+
+def test_located_count_is_official_point_count():
+    official = compute_official([], {"plants": [{}] * 36}, [], [], [{"reason": "no_osm"}] * 36,
+                                official_points=[official_point()] * 30)
+    assert official["located"] == 30
+    assert official["unmatched"]["no_osm"] == 36  # locating a plant does not change the unmatched counts
 
 
 def test_official_counts_agree_with_reports():
@@ -82,11 +96,11 @@ def test_official_counts_agree_with_reports():
     unmatched = [{"reason": "unreviewed"}, {"reason": "unreviewed"}, {"reason": "no_osm"}]
     official = compute_official(plants, {"source_dir": "raw/2026-11-12", "plants": [{}] * 5,
                                          "excluded_outside_main_island": 13},
-                                dedup, [{"official_id": "tp-plant:興達發電廠"}], unmatched)
+                                dedup, [{"official_id": "tp-plant:興達發電廠"}], unmatched, official_points=[])
     assert official == {"source_dir": "raw/2026-11-12", "plants": 5, "excluded_outside_main_island": 13,
                         "linked": 2, "facilities_with_official_id": 3, "capacity_filled": 1, "merged": 1,
                         "capacity_discrepancies": 1,
-                        "unmatched": {"no_osm": 1, "unreviewed": 2, "osm_missing": 0}}
+                        "unmatched": {"no_osm": 1, "unreviewed": 2, "osm_missing": 0}, "located": 0}
     assert compute_stats(plants, [], SUMMARY, {}, official=official, substations=[])["official"]["unmatched"]["unreviewed"] == 2
 
 

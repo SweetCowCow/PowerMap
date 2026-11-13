@@ -6,9 +6,9 @@
 ## 2. 估計位置
 
 - [x] 2.1 依「估計位置存成人工確認的 locations.csv」，為仍是 `none` 的官方電廠查座標：先用 Nominatim 查地址（每秒最多 1 次），查不到或不在該鄉鎮時改查公開資料，只有村里時取村里中心。結果存成暫存區的草稿表，附上每筆的查詢依據和地圖連結，給使用者確認。驗證：每座都有座標或「查不到」的說明；草稿表的欄位和 design 一致。
-- [ ] 2.2 [after: 2.1] 使用者確認後，寫入 `data/official/locations.csv` 並 commit。驗證：`locations.csv` 的筆數和使用者確認的一致；每列都有 `source` 和 `checked_at`。
-- [ ] 2.3 依「資料管線輸出 official_points.geojson」實作 Official location table validation 和 Official point output：新增 `powermap/official_points.py`，Makefile 新增步驟（讀官方清單、對照表、位置表）。驗證：`tests/test_official_points.py` 涵蓋驗證範例表的 6 列、檔案不存在時輸出空集合、中科 E/S 的輸出範例（含仍在 `unmatched.csv`）、欄位順序和排序；`uv run pytest` 通過。
-- [ ] 2.4 [after: 2.3] 依「stats.json 新增 official.located」實作 Located official plant count。驗證：`tests/test_stats.py` 新增 30 筆時 `located` 為 30 的情境，既有統計測試仍通過；`uv run pytest` 通過。
+- [x] 2.2 [after: 2.1] 使用者確認後，寫入 `data/official/locations.csv` 並 commit。驗證：`locations.csv` 的筆數和使用者確認的一致；每列都有 `source` 和 `checked_at`。
+- [x] 2.3 依「資料管線輸出 official_points.geojson」實作 Official location table validation 和 Official point output：新增 `powermap/official_points.py`，Makefile 新增步驟（讀官方清單、對照表、位置表）。驗證：`tests/test_official_points.py` 涵蓋驗證範例表的 6 列、檔案不存在時輸出空集合、中科 E/S 的輸出範例（含仍在 `unmatched.csv`）、欄位順序和排序；`uv run pytest` 通過。
+- [x] 2.4 [after: 2.3] 依「stats.json 新增 official.located」實作 Located official plant count。驗證：`tests/test_stats.py` 新增 30 筆時 `located` 為 30 的情境，既有統計測試仍通過；`uv run pytest` 通過。
 - [ ] 2.5 [after: 1.2, 2.2, 2.4] 執行 `make data`，確認 `official_points.geojson` 的筆數等於 `stats.official.located`，也等於 `locations.csv` 的有效列數；commit 資料。驗證：上述三個數字相同，`make data` 沒有警告。
 
 ## 3. 網頁
