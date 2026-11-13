@@ -8,7 +8,7 @@ Acquire Taipower open data from data.gov.tw, keep each download as a dated, comm
 
 ### Requirement: Official snapshot download
 
-The system SHALL provide `make official-download`, which downloads datasets 8934 (`thermal_hydro.csv`), 10858 (`nuclear.csv`), 17141 (`renewable.csv`) and 8931 (`units.json`) into `data/official/raw/<YYYY-MM-DD>/` named after the UTC download date, and writes `manifest.json` in that directory with `downloaded_at`, `license` (`政府資料開放授權條款第1版`) and, per file, `dataset_id`, `title`, `url`, `file` and `sha256`. Files SHALL be written to a temporary directory and moved into place only after all four downloads succeed. The system SHALL refuse to overwrite an existing date directory and exit non-zero. `make data` SHALL NOT access the network for official data.
+The system SHALL provide `make official-download`, which downloads datasets 8934 (`thermal_hydro.csv`), 10858 (`nuclear.csv`), 17141 (`renewable.csv`) and 8931 (`units.json`) into `data/official/raw/<YYYY-MM-DD>/` named after the UTC download date, and writes `manifest.json` in that directory with `downloaded_at`, `license` (`政府資料開放授權條款第1版`) and, per file, `dataset_id`, `title`, `url`, `file` and `sha256`. Files SHALL be written to a temporary directory and moved into place only after all four downloads succeed. The system SHALL refuse to overwrite an existing date directory and exit non-zero, unless the download command is given `--reuse-existing`, in which case it SHALL keep the existing directory, download nothing and exit 0. `make data` SHALL NOT access the network for official data.
 
 #### Scenario: Successful download creates a dated snapshot
 
@@ -25,37 +25,47 @@ The system SHALL provide `make official-download`, which downloads datasets 8934
 - **WHEN** `data/official/raw/2026-11-12/` already exists and the download runs again on the same day
 - **THEN** the command exits non-zero with a message naming the existing directory
 
+#### Scenario: Existing snapshot is reused on request
+
+- **WHEN** `data/official/raw/2026-11-12/` already exists and the download runs again on the same day with `--reuse-existing`
+- **THEN** the command exits 0, prints that it reuses the existing directory and leaves its files unchanged
+
 
 <!-- @trace
-source: cross-validate-official-data
-updated: 2026-11-12
+source: refresh-workflow
+updated: 2026-11-13
 code:
-  - data/official/raw/2026-11-12/thermal_hydro.csv
-  - Makefile
-  - data/official/raw/2026-11-12/renewable.csv
-  - README.md
   - data/processed/dedup_log.csv
-  - data/official/raw/2026-11-12/units.json
-  - data/processed/unmatched.csv
-  - powermap/facilities.py
-  - handoff.md
-  - powermap/stats.py
-  - data/official/crosswalk_candidates.csv
-  - data/official/crosswalk.csv
-  - data/processed/official_diff.csv
-  - data/official/raw/2026-11-12/nuclear.csv
-  - powermap/crosswalk.py
-  - data/processed/plants.geojson
-  - powermap/enrich.py
-  - data/official/raw/2026-11-12/manifest.json
-  - data/processed/stats.json
+  - data/processed/official_status.json
   - powermap/official.py
+  - data/official/raw/2026-11-13/nuclear.csv
+  - data/official/raw/2026-11-13/units.json
+  - README.md
+  - data/processed/stats.json
+  - data/processed/substations.geojson
+  - web/index.html
+  - powermap/official_status.py
+  - web/lib.js
+  - data/official/status.csv
+  - powermap/substations.py
+  - web/style.css
+  - Makefile
+  - data/official/crosswalk.csv
+  - data/official/raw/2026-11-13/manifest.json
+  - web/app.js
+  - data/processed/substation_dedup_log.csv
+  - data/official/raw/2026-11-13/thermal_hydro.csv
+  - data/processed/plants.geojson
+  - powermap/refresh_report.py
+  - data/official/raw/2026-11-13/renewable.csv
 tests:
-  - tests/test_crosswalk.py
+  - tests/test_make_web.py
+  - tests/test_official_status.py
+  - web/tests/lib.test.js
+  - tests/test_refresh_report.py
+  - tests/test_substations.py
   - tests/test_official.py
-  - tests/test_stats.py
-  - tests/test_facilities.py
-  - tests/test_enrich.py
+  - tests/test_make_refresh.py
 -->
 
 ---
