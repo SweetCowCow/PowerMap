@@ -150,3 +150,39 @@ tests:
   - tests/test_stats.py
   - tests/test_extract.py
 -->
+
+---
+### Requirement: Located official plant count
+
+The `official` object in `stats.json` SHALL include `located`, the number of features in `official_points.geojson`. The terminal summary SHALL print it next to the unmatched counts. Other fields of `official` SHALL keep their values.
+
+#### Scenario: Located count
+
+- **WHEN** `official_points.geojson` has 30 features
+- **THEN** `stats.official.located` is 30
+
+<!-- @trace
+source: locate-official-plants
+updated: 2026-11-13
+code:
+  - data/processed/official_points.geojson
+  - web/app.js
+  - data/official/crosswalk.csv
+  - data/processed/plants.geojson
+  - data/processed/unmatched.csv
+  - web/lib.js
+  - web/style.css
+  - data/processed/stats.json
+  - data/official/locations.csv
+  - web/index.html
+  - data/processed/dedup_log.csv
+  - powermap/official_points.py
+  - Makefile
+  - README.md
+  - powermap/stats.py
+tests:
+  - web/tests/lib.test.js
+  - tests/test_stats.py
+  - tests/test_official_points.py
+  - tests/test_make_web.py
+-->
