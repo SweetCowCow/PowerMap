@@ -52,8 +52,8 @@ $(call mark_stale_if_changed,$(FACILITIES_PARAMS),ROOFTOP_THRESHOLD_MW=$(ROOFTOP
 $(call mark_stale_if_changed,$(OFFICIAL_PARAMS),OFFICIAL_DIR=$(OFFICIAL_DIR),$(OFFICIAL) $(ENRICH_OUT) $(STATS))
 $(call mark_stale_if_changed,$(ENRICH_PARAMS),CAPACITY_DIFF_THRESHOLD=$(CAPACITY_DIFF_THRESHOLD),$(ENRICH_OUT) $(STATS))
 
-.PHONY: all data extract test clean official-download crosswalk-candidates boundaries
-all: data
+.PHONY: all data extract test clean official-download crosswalk-candidates boundaries web test-web
+all: data web
 
 data: $(STATS)
 
@@ -103,6 +103,18 @@ crosswalk-candidates: $(FACILITIES_OUT) $(OFFICIAL) powermap/crosswalk.py
 # County boundaries for the web base layer (network; not part of `make data`; commit the output)
 boundaries:
 	$(PY) -m powermap.boundaries --zip $(BOUNDARY_ZIP) --output $(COUNTIES) $(if $(BOUNDARY_URL),--url "$(BOUNDARY_URL)")
+
+# Static site: copy committed data into web/data/. Deliberately has no prerequisites on
+# pipeline outputs, so it never triggers the pipeline (CI has no OSM snapshot and the
+# parameter stamps above back-date outputs on a fresh checkout).
+WEB_DATA  := web/data
+WEB_FILES := $(PLANTS) $(LINES) $(STATS) $(DIFF) $(COUNTIES)
+web:
+	mkdir -p $(WEB_DATA)
+	cp $(WEB_FILES) $(WEB_DATA)/
+
+test-web:
+	node --test web/tests/*.test.js
 
 test:
 	uv run pytest

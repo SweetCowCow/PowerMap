@@ -1,0 +1,336 @@
+:root {
+  --bg: #0b1826;
+  --land: #142534;
+  --border: #22384a;
+  --panel: #10233a;
+  --panel-line: #1d3550;
+  --text: #dce6ee;
+  --muted: #8ea3b5;
+  --accent: #f0b85a;
+  --danger: #e0605f;
+  --panel-width: 340px;
+  --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --serif: "Noto Serif TC", "Songti TC", serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
+.options input:focus-visible + .swatch { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.layout { display: flex; height: 100%; }
+
+/* --- Panel ------------------------------------------------------------------------ */
+
+.panel {
+  width: var(--panel-width);
+  flex: none;
+  background: var(--panel);
+  border-right: 1px solid var(--panel-line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-body {
+  overflow-y: auto;
+  padding: 24px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.drawer-handle { display: none; }
+
+.intro h1 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+}
+
+.intro p { margin: 0; color: var(--muted); font-size: 14px; }
+
+.stats { display: flex; flex-direction: column; gap: 2px; }
+
+.stat { margin: 0; color: var(--muted); font-size: 14px; }
+
+.stat-num {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  margin-right: 4px;
+}
+
+.stat-of { font-variant-numeric: tabular-nums; margin-right: 4px; }
+
+.gaps { margin: 12px 0 0; display: grid; gap: 4px; font-size: 13px; }
+.gaps div { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--panel-line); padding-top: 4px; }
+.gaps dt { color: var(--muted); }
+.gaps dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+/* --- Filters / legend --------------------------------------------------------------- */
+
+.filter { border: 0; margin: 0; padding: 0; min-width: 0; }
+
+.filter legend {
+  font-weight: 700;
+  font-size: 15px;
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.bulk { display: flex; gap: 8px; margin-bottom: 6px; }
+
+.bulk button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--panel-line);
+  border-radius: 999px;
+  padding: 1px 12px;
+  cursor: pointer;
+}
+
+.bulk button:hover { color: var(--text); border-color: var(--muted); }
+
+.options { list-style: none; margin: 0; padding: 0; }
+
+.options label, .symbols li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.options label { cursor: pointer; }
+
+.options input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
+.option-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--swatch);
+  border: 2px solid var(--swatch);
+}
+
+/* Unchecked: hollow swatch and dimmed label, so legend and filter are one control. */
+.options input:not(:checked) + .swatch { background: transparent; opacity: 0.6; }
+.options input:not(:checked) ~ .option-label,
+.options input:not(:checked) ~ .option-count { color: #5d7186; text-decoration: line-through; text-decoration-color: #3b5168; }
+
+.swatch-line {
+  width: 22px;
+  height: 0;
+  border-radius: 0;
+  border: 0;
+  border-top: 3px solid var(--swatch);
+  background: none;
+}
+.swatch-line.dashed { border-top-style: dashed; }
+.options input:not(:checked) + .swatch-line { background: none; }
+
+.swatch-diamond {
+  width: 11px;
+  height: 11px;
+  border-radius: 0;
+  transform: rotate(45deg);
+  background: transparent;
+  border: 2px solid #fff;
+  margin: 0 1.5px;
+}
+
+.symbols { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--panel-line); color: var(--muted); }
+.symbols li { font-size: 13px; }
+.swatch-mixed { --swatch: #b98ad9; border: 2px dashed #fff; }
+.swatch-plant { --swatch: #8ea3b5; width: 12px; height: 12px; margin: 0 1px; }
+.swatch-generator { --swatch: #8ea3b5; width: 7px; height: 7px; margin: 0 3.5px; }
+
+/* --- Gap toggle --------------------------------------------------------------------- */
+
+.gap-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.gap-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
+.gap-toggle small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+
+.gap-track {
+  flex: none;
+  width: 36px;
+  height: 20px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--panel-line);
+  position: relative;
+  transition: background 0.15s;
+}
+
+.gap-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s;
+}
+
+.gap-toggle input:checked + .gap-track { background: #6d4f66; }
+.gap-toggle input:checked + .gap-track::after { transform: translateX(16px); background: #e6c3dc; }
+
+/* --- Credits ------------------------------------------------------------------------ */
+
+.credits { margin-top: auto; font-size: 12px; color: var(--muted); border-top: 1px solid var(--panel-line); padding-top: 12px; }
+.credits p { margin: 0 0 6px; }
+
+/* --- Map ---------------------------------------------------------------------------- */
+
+.map-wrap { position: relative; flex: 1; min-width: 0; }
+
+#map { position: absolute; inset: 0; background: var(--bg); }
+
+.banner {
+  position: absolute;
+  z-index: 1000;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100% - 32px));
+  background: #3a1a1f;
+  border: 1px solid var(--danger);
+  color: #ffd9d9;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.leaflet-container { font-family: var(--sans); background: var(--bg); }
+
+.leaflet-bar a, .leaflet-control-layers {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--panel-line);
+}
+
+.leaflet-bar a:hover { background: #17304b; color: var(--text); }
+.leaflet-control-layers-expanded { color: var(--text); padding: 8px 12px; }
+.leaflet-control-layers-toggle { filter: invert(0.85); }
+.leaflet-control-attribution { background: rgba(11, 24, 38, 0.8) !important; color: var(--muted); }
+.leaflet-control-attribution a { color: var(--muted); }
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+}
+
+.leaflet-popup-content { margin: 12px 16px; font-size: 13px; }
+.leaflet-container .popup a { color: var(--accent); }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+
+.popup h3 { font-size: 15px; margin: 0 0 6px; }
+.popup table { border-collapse: collapse; margin-bottom: 6px; }
+.popup th { text-align: left; font-weight: 400; color: var(--muted); padding: 1px 12px 1px 0; white-space: nowrap; vertical-align: top; }
+.popup td { padding: 1px 0; }
+.popup code { font-size: 12px; }
+
+/* Cluster markers: fixed size; colour is the energy colour, the number is the member count. */
+.energy-cluster {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--cluster);
+  color: #0b1826;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 3px rgba(11, 24, 38, 0.75);
+}
+
+.nuclear-icon svg { display: block; }
+
+/* --- Mobile: bottom drawer ---------------------------------------------------------- */
+
+@media (max-width: 767px) {
+  .layout { display: block; }
+
+  .map-wrap { position: absolute; inset: 0; }
+
+  .panel {
+    position: fixed;
+    z-index: 1100;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 72vh;
+    border-right: 0;
+    border-top: 1px solid var(--panel-line);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .drawer-handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 16px 12px;
+    background: none;
+    border: 0;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .drawer-grip { width: 40px; height: 4px; border-radius: 2px; background: var(--muted); }
+
+  .panel-body { padding: 4px 16px 20px; }
+
+  .panel:not(.open) .panel-body { display: none; }
+
+  .leaflet-bottom { bottom: 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gap-track, .gap-track::after { transition: none; }
+}

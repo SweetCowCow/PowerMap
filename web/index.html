@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>台灣電力地圖</title>
+  <meta name="description" content="用 OpenStreetMap 資料畫出台灣的發電設施與電力線，可依能源、電壓篩選，並標出缺少容量與電壓的資料。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b1826'/%3E%3Ccircle cx='8' cy='8' r='4' fill='%23ffd15c'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+        integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"
+        integrity="sha512-mQ77VzAakzdpWdgfL/lM1ksNy89uFgibRQANsNneSTMD/bj0Y/8+94XMwYhnbzx8eki2hrbPpDm0vD0CiT2lcg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="panel" id="panel" aria-label="篩選與圖例">
+      <button class="drawer-handle" id="drawer-handle" type="button" aria-expanded="false" aria-controls="panel-body">
+        <span class="drawer-grip" aria-hidden="true"></span>
+        <span id="drawer-summary">載入中</span>
+      </button>
+
+      <div class="panel-body" id="panel-body">
+        <header class="intro">
+          <h1>台灣電力地圖</h1>
+          <p>OpenStreetMap 上標示的發電設施與電力線。灰色與虛線是資料缺口，不是沒有設施。</p>
+        </header>
+
+        <section class="stats" aria-label="目前顯示">
+          <p class="stat"><span class="stat-num" id="stat-facilities">–</span><span class="stat-of" id="stat-facilities-total"></span> 座發電設施</p>
+          <p class="stat"><span class="stat-num" id="stat-lines">–</span><span class="stat-of" id="stat-lines-total"></span> 段電力線</p>
+          <dl class="gaps">
+            <div><dt>缺容量的設施</dt><dd id="stat-missing-capacity">–</dd></div>
+            <div><dt>缺電壓的線段</dt><dd id="stat-missing-voltage">–</dd></div>
+            <div><dt>台電有、OSM 沒標的電廠</dt><dd id="stat-unmatched">–</dd></div>
+          </dl>
+        </section>
+
+        <fieldset class="filter" id="energy-filter">
+          <legend>能源</legend>
+          <div class="bulk">
+            <button type="button" data-bulk="all">全選</button>
+            <button type="button" data-bulk="none">全不選</button>
+          </div>
+          <ul class="options" id="energy-options"></ul>
+          <ul class="options symbols" aria-label="其他符號">
+            <li><span class="swatch swatch-mixed" aria-hidden="true"></span>多種能源（勾選其中一種就會顯示）</li>
+            <li><span class="swatch swatch-plant" aria-hidden="true"></span>電廠</li>
+            <li><span class="swatch swatch-generator" aria-hidden="true"></span>獨立發電機（縮小時依能源聚合，數字是支數）</li>
+          </ul>
+        </fieldset>
+
+        <fieldset class="filter" id="voltage-filter">
+          <legend>電力線電壓</legend>
+          <ul class="options" id="voltage-options"></ul>
+        </fieldset>
+
+        <label class="gap-toggle">
+          <input type="checkbox" id="gaps-only" role="switch">
+          <span class="gap-track" aria-hidden="true"></span>
+          <span>只看資料缺口<small>只顯示缺容量的設施與缺電壓的線</small></span>
+        </label>
+
+        <footer class="credits">
+          <p>點的大小只用來分辨電廠與發電機，不代表容量；線寬也不代表電力潮流。</p>
+          <p>本圖不是即時供電圖。設施出現在圖上，不代表正在運轉。</p>
+          <p>OSM 快照：<time id="snapshot">–</time></p>
+          <p>地圖資料 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>，以 <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">ODbL 1.0</a> 授權。台電電廠資料與內政部國土測繪中心縣市界線，依<a href="https://data.gov.tw/license" target="_blank" rel="noopener">政府資料開放授權條款第 1 版</a>使用。</p>
+        </footer>
+      </div>
+    </aside>
+
+    <main class="map-wrap">
+      <div class="banner" id="banner" role="alert" hidden></div>
+      <div id="map" aria-label="台灣電力地圖"></div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"
+          integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"
+          integrity="sha512-OFs3W4DIZ5ZkrDhBFtsCP6JXtMEDGmhl0QPlmWYBJay40TT1n3gt2Xuw8Pf/iezgW9CdabjkNChRqozl/YADmg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

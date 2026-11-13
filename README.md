@@ -1,10 +1,14 @@
-# PowerMap — 台灣電力地圖資料管線
+# PowerMap — 台灣電力地圖
 
-從 OpenStreetMap（OSM）台灣快照取出發電設施與電力線，整理成可重跑、可檢查的 GeoJSON。這是台灣電力地圖專案的第一階段：
+從 OpenStreetMap（OSM）台灣快照取出發電設施與電力線，整理成可重跑、可檢查的 GeoJSON，再做成可篩選的互動地圖。
+
+- 網站：https://sweetcowcow.github.io/PowerMap/
+
+專案包含三個部分：
 
 1. **OSM 資料管線**
 2. **台電官方開放資料取得與交叉驗證**
-3. Leaflet 互動網頁（後續）
+3. **Leaflet 互動網頁**（`web/`）
 
 需求來源見 `taiwan-power-map-plan.md`；規格與決策紀錄見 `docs/spectra/`。
 
@@ -24,7 +28,11 @@ uv sync
 | `make extract` | 只下載與抽取，印出抽取摘要（數量、多能源筆數、離島排除數） |
 | `make official-download` | 連網下載一份新的台電官方資料快照到 `data/official/raw/<日期>/`（下載後請 commit） |
 | `make crosswalk-candidates` | 產生 `data/official/crosswalk_candidates.csv`，供人工建立對照表 |
-| `make test` | 執行全部單元測試 |
+| `make boundaries` | 連網下載內政部國土測繪中心的縣市界線（data.gov.tw 7442），簡化後輸出 `data/processed/counties.geojson`（下載後請 commit）。不屬於 `make data` |
+| `make web` | 把 `data/processed/` 的五個檔案複製到 `web/data/`，不會觸發資料管線 |
+| `make all` | `make data` 加上 `make web` |
+| `make test` | 執行資料管線的單元測試（pytest） |
+| `make test-web` | 執行網頁的單元測試（`node --test`，不需要 npm 套件） |
 | `make clean` | 刪除中間檔與輸出檔，保留已下載的快照 |
 
 可調參數（在 `make` 後面加上即可，例如 `make data DEDUP_DISTANCE_M=300`）：
@@ -49,6 +57,20 @@ uv sync
 | `data/processed/dedup_log.csv` | 每一筆歸併、排除、合併的紀錄（含依官方對照表合併的 `official_same_plant`），方便人工複查 |
 | `data/processed/official_diff.csv` | OSM 與官方容量差異超過門檻的電廠 |
 | `data/processed/unmatched.csv` | 沒有對應到 OSM 的官方電廠：`no_osm`（已審閱，OSM 沒有）、`unreviewed`（尚未審閱）、`osm_missing`（對照表的 OSM id 已失效） |
+
+## 網頁
+
+```bash
+make web
+python -m http.server -d web 8000   # 開啟 http://localhost:8000/
+```
+
+- 純 HTML/JS，以 CDN 載入 Leaflet 1.9.4 與 Leaflet.markercluster 1.5.3，不需要打包工具。篩選、Popup 等邏輯在 `web/lib.js`，畫面接線在 `web/app.js`。
+- 預設底圖是縣市界輪廓，不請求外部圖磚；右上角可以切換成 CARTO 深色圖磚。
+- 能源篩選以 `energy_sources` 為準：多種能源的設施，只要勾選其中一種就會顯示。
+- 獨立發電機依能源分組聚合，聚合點大小固定、數字是支數，放大到 zoom 12 以上就逐支顯示；電廠不聚合。
+- 「只看資料缺口」只顯示缺容量的設施與缺電壓的線，並和能源、電壓篩選同時生效。
+- push 到 `main` 後，GitHub Actions（`.github/workflows/pages.yml`）會先跑 `make test-web`，再執行 `make web`，最後發佈 `web/` 到 GitHub Pages。CI 不跑 Python 資料管線，所以資料更新後要先在本機執行 `make data` 並 commit `data/processed/`。
 
 ## 官方資料與對照表
 
@@ -90,4 +112,6 @@ uv sync
 
 - 地圖資料 © OpenStreetMap contributors，以 [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) 授權。快照來源：Geofabrik（`https://download.geofabrik.de/asia/taiwan-latest.osm.pbf`）。
 - 輸出的 GeoJSON 為 OSM 的衍生資料庫，同樣適用 ODbL 1.0。
+- 縣市界線：內政部國土測繪中心「直轄市、縣市界線(TWD97經緯度)」（data.gov.tw 7442），政府資料開放授權條款第 1 版；網址、下載時間與 SHA-256 記在 `counties.geojson` 的 `source` 欄位。
+- 深色圖磚（選用圖層）：© OpenStreetMap contributors © CARTO。
 - 官方資料：台灣電力股份有限公司，經政府資料開放平臺（data.gov.tw）以[政府資料開放授權條款第 1 版](https://data.gov.tw/license)提供。原始檔與下載時間、SHA-256 記錄在 `data/official/raw/<日期>/manifest.json`。

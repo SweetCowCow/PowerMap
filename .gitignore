@@ -17,3 +17,6 @@ data/raw/*
 data/interim/*
 !data/interim/.gitkeep
 *.osm.pbf
+
+# Web map data (copied by `make web`)
+web/data/
