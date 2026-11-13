@@ -4,6 +4,7 @@ import {
   ENERGY_COLORS,
   ENERGY_LABELS,
   ENERGY_ORDER,
+  REQUIRED_FILES,
   VOLTAGE_ORDER,
   VOLTAGE_STYLES,
   countVisible,
@@ -18,6 +19,9 @@ import {
   lineVisible,
   mainPolygonBounds,
   nominatimUrl,
+  officialPointPopupHtml,
+  officialPointStyle,
+  officialPointVisible,
   parseDiffCsv,
   reserveSlot,
   searchFacilities,
@@ -29,7 +33,6 @@ import {
 
 /* global L */
 
-const REQUIRED = ["plants.geojson", "lines.geojson", "substations.geojson", "stats.json", "counties.geojson"];
 const MAIN_ISLAND = [[21.88, 119.95], [25.32, 122.03]];
 const UNCLUSTER_ZOOM = 12;
 
@@ -43,13 +46,13 @@ async function loadData() {
     return kind === "text" ? res.text() : res.json();
   };
   const [required, diff] = await Promise.all([
-    Promise.allSettled(REQUIRED.map((name) => fetchOne(name, "json"))),
+    Promise.allSettled(REQUIRED_FILES.map((name) => fetchOne(name, "json"))),
     fetchOne("official_diff.csv", "text").then(parseDiffCsv, () => new Map()),
   ]);
-  const failed = failedFiles(REQUIRED, required);
+  const failed = failedFiles(REQUIRED_FILES, required);
   if (failed.length) return { failed };
-  const [plants, lines, substations, stats, counties] = required.map((r) => r.value);
-  return { plants, lines, substations, stats, counties, diff, failed: [] };
+  const [plants, lines, substations, officialPoints, stats, counties] = required.map((r) => r.value);
+  return { plants, lines, substations, officialPoints, stats, counties, diff, failed: [] };
 }
 
 function showBanner(message) {
@@ -181,8 +184,15 @@ function checkedValues(list) {
 
 const NOMINATIM_INTERVAL_MS = 1000;
 
+function officialPointLayer(feature, renderer) {
+  const [lon, lat] = feature.geometry.coordinates;
+  const layer = L.circleMarker([lat, lon], { renderer, ...officialPointStyle(feature.properties) });
+  layer.bindPopup(() => officialPointPopupHtml(feature.properties), { maxWidth: 320 });
+  return layer;
+}
+
 /** County selector, facility-name search (local, as you type) and place search (Nominatim, on submit). */
-function setupLocate(map, counties, plants, substations, diff) {
+function setupLocate(map, counties, plants, substations, officialPoints, diff) {
   const root = document.getElementById("locate");
   L.DomEvent.disableClickPropagation(root);
   L.DomEvent.disableScrollPropagation(root);
@@ -205,6 +215,7 @@ function setupLocate(map, counties, plants, substations, diff) {
   const results = document.getElementById("search-results");
   let facilityHits = [];
   let substationHits = [];
+  let officialHits = [];
   let placeHits = null; // null: not searched; [] or array: Nominatim result; string: message
   let lastNominatim = 0;
   let pendingQuery = null;
@@ -246,6 +257,10 @@ function setupLocate(map, counties, plants, substations, diff) {
     html += substationHits.length
       ? `<ul>${substationHits.map((f, i) => `<li><button type="button" data-substation="${i}">${escapeHtml(f.properties.name)}<span>${escapeHtml(substationTypeLabel(f.properties.substation))}・${escapeHtml(VOLTAGE_STYLES[f.properties.voltage_class]?.label ?? "")}</span></button></li>`).join("")}</ul>`
       : '<p class="results-empty">沒有名稱相符的變電所</p>';
+    if (officialHits.length) {
+      html += '<p class="results-head">台電資料（估計位置）</p>';
+      html += `<ul>${officialHits.map((f, i) => `<li><button type="button" data-official="${i}">${escapeHtml(f.properties.name)}<span>${escapeHtml(ENERGY_LABELS[f.properties.energy_primary] ?? "")}・依地址估計</span></button></li>`).join("")}</ul>`;
+    }
     html += '<p class="results-head">地名或地址</p>';
     if (placeHits === null) {
       html += '<p class="results-note">按 Enter 或「搜尋地名」查詢。查詢文字會送到 OpenStreetMap Nominatim。</p>';
@@ -262,6 +277,7 @@ function setupLocate(map, counties, plants, substations, diff) {
   input.addEventListener("input", () => {
     facilityHits = searchFacilities(plants.features, input.value);
     substationHits = searchFacilities(substations.features, input.value);
+    officialHits = searchFacilities(officialPoints.features, input.value);
     placeHits = null;
     render();
   });
@@ -310,6 +326,9 @@ function setupLocate(map, counties, plants, substations, diff) {
     } else if (button.dataset.substation !== undefined) {
       const f = substationHits[Number(button.dataset.substation)];
       openFound(f, substationPopupHtml(f.properties));
+    } else if (button.dataset.official !== undefined) {
+      const f = officialHits[Number(button.dataset.official)];
+      openFound(f, officialPointPopupHtml(f.properties));
     } else if (button.dataset.place !== undefined) {
       const p = placeHits[Number(button.dataset.place)];
       const [s, n, w, e] = p.boundingbox.map(Number);
@@ -352,7 +371,7 @@ async function main() {
     showBanner(`無法載入資料檔：${data.failed.join("、")}。請確認已執行 make web，再重新整理頁面。`);
     return;
   }
-  const { plants, lines, substations, stats, counties, diff } = data;
+  const { plants, lines, substations, officialPoints, stats, counties, diff } = data;
   baseLayers(map, counties);
 
   // --- Layers --------------------------------------------------------------------------
@@ -398,6 +417,10 @@ async function main() {
     return { props, layer, group };
   });
 
+  // Official estimated locations share the vectors canvas (drawn after facilities in apply()).
+  const officialItems = officialPoints.features.map((f) => ({ props: f.properties, layer: officialPointLayer(f, vectorRenderer) }));
+  const officialGroup = L.layerGroup().addTo(map);
+
   // --- Controls ------------------------------------------------------------------------
   const energyCount = (key) => countVisible(plants.features, (p) => (key === "unknown"
     ? (p.energy_sources ?? []).length === 0
@@ -413,6 +436,11 @@ async function main() {
   const gapsToggle = document.getElementById("gaps-only");
   const substationToggle = document.getElementById("substations-toggle");
   substationToggle.checked = initial.substations;
+  const officialToggle = document.getElementById("official-toggle");
+  officialToggle.checked = initial.officialPoints;
+  document.getElementById("official-count").textContent = fmt(officialPoints.features.length);
+  document.getElementById("stat-official-total").textContent = `/ ${fmt(officialPoints.features.length)}`;
+  document.getElementById("stat-located").textContent = fmt(stats.official?.located ?? officialPoints.features.length);
   document.getElementById("substations-count").textContent = fmt(substations.features.length);
   document.getElementById("stat-substations-total").textContent = `/ ${fmt(substations.features.length)}`;
   document.getElementById("stat-substations-missing").textContent = fmt(stats.substations_missing_voltage ?? 0);
@@ -434,6 +462,7 @@ async function main() {
       voltages: checkedValues(voltageList),
       gapsOnly: gapsToggle.checked,
       substations: substationToggle.checked,
+      officialPoints: officialToggle.checked,
     };
 
     lineGroup.clearLayers();
@@ -460,6 +489,16 @@ async function main() {
     }
 
     setCount("stat-facilities", visibleFacilities);
+    officialGroup.clearLayers();
+    let visibleOfficial = 0;
+    for (const item of officialItems) {
+      if (officialPointVisible(item.props, filters)) {
+        officialGroup.addLayer(item.layer);
+        visibleOfficial += 1;
+      }
+    }
+    setCount("stat-official", visibleOfficial);
+
     substationGroup.clearLayers();
     let visibleSubstations = 0;
     for (const item of substationItems) {
@@ -471,13 +510,15 @@ async function main() {
 
     setCount("stat-lines", visibleLines);
     setCount("stat-substations", visibleSubstations);
-    document.getElementById("drawer-summary").textContent = `顯示 ${fmt(visibleLines)} 段電力線、${fmt(visibleSubstations)} 座變電所、${fmt(visibleFacilities)} 座設施`;
+    const officialText = visibleOfficial ? `、${fmt(visibleOfficial)} 座台電估計位置` : "";
+    document.getElementById("drawer-summary").textContent = `顯示 ${fmt(visibleLines)} 段電力線、${fmt(visibleSubstations)} 座變電所、${fmt(visibleFacilities)} 座設施${officialText}`;
   }
 
   energyList.addEventListener("change", apply);
   voltageList.addEventListener("change", apply);
   gapsToggle.addEventListener("change", apply);
   substationToggle.addEventListener("change", apply);
+  officialToggle.addEventListener("change", apply);
   document.querySelector("#energy-filter .bulk").addEventListener("click", (event) => {
     const mode = event.target.closest("button")?.dataset.bulk;
     if (!mode) return;
@@ -486,9 +527,9 @@ async function main() {
   });
 
   apply();
-  setupLocate(map, counties, plants, substations, diff);
+  setupLocate(map, counties, plants, substations, officialPoints, diff);
   // Handle for debugging in the browser console (e.g. powermap.map.setZoom(12)).
-  window.powermap = { map, facilityItems, lineItems, substationItems };
+  window.powermap = { map, facilityItems, lineItems, substationItems, officialItems };
 }
 
 main().catch((err) => {

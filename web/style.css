@@ -95,6 +95,7 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 .gaps div { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--panel-line); padding-top: 4px; }
 .gaps dt { color: var(--muted); }
 .gaps dd { margin: 0; font-variant-numeric: tabular-nums; }
+.gaps .gap-sub { border-top: 0; padding-top: 0; padding-left: 12px; }
 
 /* --- Filters / legend --------------------------------------------------------------- */
 
@@ -188,6 +189,11 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 .swatch-mixed { --swatch: #b98ad9; border: 2px dashed #fff; }
 .swatch-plant { --swatch: #8ea3b5; width: 12px; height: 12px; margin: 0 1px; }
 .swatch-generator { --swatch: #8ea3b5; width: 7px; height: 7px; margin: 0 3.5px; }
+
+/* Official estimated locations: hollow dashed circle, never filled like an OSM facility. */
+.official-option { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--panel-line); }
+.swatch-official { width: 12px; height: 12px; margin: 0 1px; background: transparent; border: 2px dashed #8ea3b5; }
+.options input:not(:checked) + .swatch-official { background: transparent; opacity: 0.5; }
 
 /* --- Gap toggle --------------------------------------------------------------------- */
 
@@ -283,6 +289,7 @@ a:focus-visible, button:focus-visible, input:focus-visible + .gap-track,
 .popup table { border-collapse: collapse; margin-bottom: 6px; }
 .popup th { text-align: left; font-weight: 400; color: var(--muted); padding: 1px 12px 1px 0; white-space: nowrap; vertical-align: top; }
 .popup td { padding: 1px 0; }
+.popup-note { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
 .popup code { font-size: 12px; }
 
 /* Cluster markers: fixed size; colour is the energy colour, the number is the member count. */

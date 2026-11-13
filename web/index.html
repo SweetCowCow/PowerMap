@@ -28,7 +28,7 @@
       <div class="panel-body" id="panel-body">
         <header class="intro">
           <h1>台灣電力地圖</h1>
-          <p>OpenStreetMap 上標示的電力線、變電所與發電設施。虛線是缺電壓的線段，不是沒有線路。發電設施預設不顯示，可在下方依能源勾選。</p>
+          <p>OpenStreetMap 上標示的電力線、變電所與發電設施，另以虛線空心圓標出 OSM 沒標、依台電地址估計位置的電廠。虛線是缺電壓的線段，不是沒有線路。發電設施預設不顯示，可在下方依能源勾選。</p>
         </header>
 
 
@@ -64,6 +64,15 @@
             <li><span class="swatch swatch-plant" aria-hidden="true"></span>電廠</li>
             <li><span class="swatch swatch-generator" aria-hidden="true"></span>獨立發電機（縮小時依能源聚合，數字是支數）</li>
           </ul>
+          <ul class="options official-option">
+            <li><label>
+              <input type="checkbox" id="official-toggle" checked>
+              <span class="swatch swatch-official" aria-hidden="true"></span>
+              <span class="option-label">台電資料（估計位置）</span>
+              <span class="option-count" id="official-count"></span>
+            </label></li>
+          </ul>
+          <p class="filter-note">虛線空心圓是 OSM 沒標、依台電地址估計的電廠位置，顏色跟著台電登記的主要能源，也跟著上方的能源勾選。</p>
         </fieldset>
 
         <section class="stats" aria-labelledby="stats-title">
@@ -72,12 +81,14 @@
           <p class="stat"><span class="stat-num" id="stat-lines" aria-live="polite">–</span><span class="stat-of" id="stat-lines-total"></span> 段電力線</p>
           <p class="stat"><span class="stat-num" id="stat-substations" aria-live="polite">–</span><span class="stat-of" id="stat-substations-total"></span> 座變電所</p>
           <p class="stat"><span class="stat-num" id="stat-facilities" aria-live="polite">–</span><span class="stat-of" id="stat-facilities-total"></span> 座發電設施</p>
+          <p class="stat"><span class="stat-num" id="stat-official" aria-live="polite">–</span><span class="stat-of" id="stat-official-total"></span> 座台電估計位置</p>
           <h3 class="stats-sub">全部資料（不隨篩選變動）</h3>
           <dl class="gaps">
             <div><dt>缺電壓的線段</dt><dd id="stat-missing-voltage">–</dd></div>
             <div><dt>缺電壓的變電所</dt><dd id="stat-substations-missing">–</dd></div>
             <div><dt>缺容量的設施</dt><dd id="stat-missing-capacity">–</dd></div>
             <div><dt>台電有、OSM 沒標的電廠</dt><dd id="stat-unmatched">–</dd></div>
+            <div class="gap-sub"><dt>其中有估計位置</dt><dd id="stat-located">–</dd></div>
           </dl>
         </section>
 

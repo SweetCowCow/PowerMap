@@ -273,8 +273,18 @@ export function voltageCountLabel(lines, substations) {
 
 /** Default filter state: all voltage classes and substations on, all energies off, gap mode off (lines first). */
 export function initialFilters() {
-  return { energies: new Set(), voltages: new Set(VOLTAGE_ORDER), gapsOnly: false, substations: true };
+  return { energies: new Set(), voltages: new Set(VOLTAGE_ORDER), gapsOnly: false, substations: true, officialPoints: true };
 }
+
+/** Data files the page cannot render without; `official_diff.csv` is optional and loaded separately. */
+export const REQUIRED_FILES = [
+  "plants.geojson",
+  "lines.geojson",
+  "substations.geojson",
+  "official_points.geojson",
+  "stats.json",
+  "counties.geojson",
+];
 
 // --- Substations ------------------------------------------------------------------------
 
@@ -339,6 +349,53 @@ export function facilityStyle(props) {
 /** Cluster group key: generators cluster per energy; plants never cluster (null). */
 export function facilityGroupKey(props) {
   return props.kind === "generator" ? props.energy : null;
+}
+
+// --- Official estimated locations -------------------------------------------------------
+
+/** `precision` values of data/official/locations.csv, as shown in popups. */
+export const PRECISION_LABELS = {
+  address: "門牌",
+  parcel: "地號",
+  village: "村里中心",
+  road: "路段",
+  site: "廠區",
+  offshore: "外海",
+};
+
+/** Hollow dashed circle, so an estimate never looks like a filled OSM facility symbol. */
+export function officialPointStyle(props) {
+  return {
+    radius: 6,
+    color: ENERGY_COLORS[props.energy_primary] ?? ENERGY_COLORS.unknown,
+    weight: 2,
+    dashArray: "3 3",
+    fill: false,
+  };
+}
+
+/**
+ * An official point needs the 台電資料 toggle on, gap mode off (its capacity is known) and
+ * its primary energy checked (`null` counts as `unknown`).
+ */
+export function officialPointVisible(props, filters) {
+  if (!filters.officialPoints || filters.gapsOnly) return false;
+  return filters.energies.has(props.energy_primary ?? "unknown");
+}
+
+/** Popup HTML for an official point; it always says the position is an estimate. */
+export function officialPointPopupHtml(props) {
+  const energy = props.energy_primary ? ENERGY_LABELS[props.energy_primary] ?? props.energy_primary : MISSING;
+  const rows = [
+    row("容量", escapeHtml(formatCapacity(props.capacity_mw))),
+    row("主要能源", escapeHtml(energy)),
+    row("地址", escapeHtml(props.address ?? MISSING)),
+    row("精確程度", escapeHtml(PRECISION_LABELS[props.precision] ?? props.precision ?? MISSING)),
+    row("查詢日期", escapeHtml(props.checked_at ?? MISSING)),
+  ];
+  return `<div class="popup"><h3>${escapeHtml(props.name ?? "未命名")}</h3>`
+    + '<p class="popup-note">台電資料・位置為依地址估計，不是 OSM 資料</p>'
+    + `<table>${rows.join("")}</table></div>`;
 }
 
 /**

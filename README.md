@@ -58,6 +58,7 @@ uv sync
 | `data/processed/dedup_log.csv` | 每一筆歸併、排除、合併的紀錄（含依官方對照表合併的 `official_same_plant`），方便人工複查 |
 | `data/processed/official_diff.csv` | OSM 與官方容量差異超過門檻的電廠 |
 | `data/processed/unmatched.csv` | 沒有對應到 OSM 的官方電廠：`no_osm`（已審閱，OSM 沒有）、`unreviewed`（尚未審閱）、`osm_missing`（對照表的 OSM id 已失效） |
+| `data/processed/official_points.geojson` | OSM 沒有、但在 `data/official/locations.csv` 有人工確認估計位置的官方電廠，每座一個點，屬性依序為 `official_id`、`name`、`county`、`address`、`capacity_mw`、`energy_primary`、`precision`、`method`、`source`、`checked_at`。這些電廠仍列在 `unmatched.csv`；`stats.json` 的 `official.located` 是點數 |
 
 ## 網頁
 
@@ -74,6 +75,7 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 - 能源篩選以 `energy_sources` 為準：多種能源的設施，只要勾選其中一種就會顯示。
 - 獨立發電機依能源分組聚合，聚合點大小固定、數字是支數，放大到 zoom 12 以上就逐支顯示；電廠不聚合。
 - 「只看資料缺口」只顯示缺容量的設施與缺電壓的線，並和能源、電壓篩選同時生效。
+- 台電資料（估計位置）：OSM 沒標、依台電地址估計位置的電廠畫成虛線空心圓，顏色是台電登記的主要能源，跟著能源勾選與「台電資料（估計位置）」開關，開啟「只看資料缺口」時隱藏（容量已知）。Popup 會寫明「位置為依地址估計，不是 OSM 資料」和精確程度；搜尋框另有「台電資料」分組。
 - push 到 `main` 後，GitHub Actions（`.github/workflows/pages.yml`）會先跑 `make test-web`，再執行 `make web`，最後發佈 `web/` 到 GitHub Pages。CI 不跑 Python 資料管線，所以資料更新後要先在本機執行 `make data` 並 commit `data/processed/`。
 
 ## 官方資料與對照表
@@ -96,6 +98,25 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
    - `part`：每個 OSM 設施是這座官方電廠的一部分（例如分廠），不合併、不補容量。
    - `none`：已審閱，OSM 沒有對應。
 3. `make data`，確認終端輸出的「Unreviewed official plants」與「ignored crosswalk ids」都是 0。
+4. 對照表中仍是 `none` 的電廠，可以在 `data/official/locations.csv` 補上估計位置（見下節）。
+
+風力電廠通常是一座官方電站對多支 OSM 風機，用 `part` 列出風機 id；`note` 寫比對依據（官方風機數、型號、OSM 的 operator／ref）。分不出哪幾支屬於台電時寧可不連（例如彰工只連標了台電 ref 的 8 支）。
+
+### 估計位置表 `data/official/locations.csv`
+
+台電資料只有地址沒有座標。OSM 沒有的官方電廠，由人工查詢、確認後記在這張表，網頁以虛線空心圓顯示，和 OSM 資料分開：
+
+| 欄位 | 內容 |
+| --- | --- |
+| `official_id` | 官方電廠 id，對照表的 relation 必須是 `none` |
+| `lat`、`lon` | WGS84，小數 5 位，必須在本島範圍框內 |
+| `precision` | `address`（門牌）、`parcel`（地號）、`village`（村里中心）、`road`（路段或巷弄）、`site`（從 OSM 或公開資料確認的廠區）、`offshore`（外海描述） |
+| `method` | `nominatim`（Nominatim 查得）或 `manual`（人工比對） |
+| `source` | 查詢字串或來源網址（例如 OSM 物件網址） |
+| `checked_at` | 查詢日期 |
+| `note` | 補充說明，例如官方名稱和地址疑似對調 |
+
+查詢順序：先用 Nominatim 查門牌（每秒最多 1 次，手動查詢、不在資料管線中自動呼叫）；查不到時用設施名稱找 OSM 上的廠區（變電所、電廠、淨水場等）；再不行取 1 公里內的路段，或地址中村里的中心；只有地號或路段太長就不標，留在 `unmatched.csv`。新增或修改後執行 `make data`：重複的 id、不合法的 `precision`／`method`、非數字或超出範圍的座標會讓 `make data` 失敗並印出問題列；對照表已連到 OSM 或不在官方清單的 id 會印警告並忽略。
 
 補值規則：只在 OSM 缺容量時補官方值（`capacity_source: "taipower"`），OSM 原值不覆蓋；`energy_primary` 取官方容量最大的燃料（`energy_primary_source: "taipower"`），`energy`／`energy_sources` 仍是 OSM 判定。
 
@@ -120,4 +141,5 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 - 選用圖磚：OpenStreetMap 標準圖磚，© OpenStreetMap contributors。
 - 選用正射影像：內政部國土測繪中心 WMTS（PHOTO2），政府資料開放授權條款第 1 版。
 - 地名搜尋：OpenStreetMap Nominatim（按下搜尋才送出查詢），© OpenStreetMap contributors。
+- 台電電廠估計位置（`data/official/locations.csv`）：以 OpenStreetMap Nominatim 與 OSM 物件位置人工查得，屬 OSM 衍生資料，適用 ODbL 1.0。
 - 官方資料：台灣電力股份有限公司，經政府資料開放平臺（data.gov.tw）以[政府資料開放授權條款第 1 版](https://data.gov.tw/license)提供。原始檔與下載時間、SHA-256 記錄在 `data/official/raw/<日期>/manifest.json`。

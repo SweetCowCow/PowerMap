@@ -5,6 +5,8 @@ import assert from "node:assert/strict";
 import {
   ENERGY_COLORS,
   ENERGY_ORDER,
+  PRECISION_LABELS,
+  REQUIRED_FILES,
   VOLTAGE_ORDER,
   VOLTAGE_STYLES,
   countVisible,
@@ -20,6 +22,9 @@ import {
   lineVisible,
   mainPolygonBounds,
   nominatimUrl,
+  officialPointPopupHtml,
+  officialPointStyle,
+  officialPointVisible,
   parseDiffCsv,
   reserveSlot,
   searchFacilities,
@@ -224,6 +229,7 @@ test("initial filters: lines on, facilities off, gap mode off", () => {
   assert.deepEqual([...f.voltages], VOLTAGE_ORDER);
   assert.equal(f.gapsOnly, false);
   assert.equal(f.substations, true);
+  assert.equal(f.officialPoints, true);
   assert.equal(facilityVisible({ energy_sources: ["solar"], missing_capacity: true }, f), false);
   assert.equal(facilityVisible({ energy_sources: [], missing_capacity: true }, f), false);
   assert.equal(lineVisible({ voltage_class: "missing", missing_voltage: true }, f), true);
@@ -321,4 +327,62 @@ test("voltage checkbox shows line and substation counts", () => {
   assert.equal(voltageCountLabel(264, 31), "264 段・31 座");
   assert.equal(voltageCountLabel(1059, 351), "1,059 段・351 座");
   assert.equal(voltageCountLabel(1, undefined), "1 段・0 座");
+});
+
+test("required files include official points; failedFiles names it", () => {
+  assert.deepEqual(REQUIRED_FILES, ["plants.geojson", "lines.geojson", "substations.geojson", "official_points.geojson",
+    "stats.json", "counties.geojson"]);
+  const ok = { status: "fulfilled", value: {} };
+  const bad = { status: "rejected", reason: new Error("HTTP 404") };
+  const settled = REQUIRED_FILES.map((name) => (name === "official_points.geojson" ? bad : ok));
+  assert.deepEqual(failedFiles(REQUIRED_FILES, settled), ["official_points.geojson"]);
+});
+
+// --- Official estimated locations ---------------------------------------------------------
+
+test("official point visibility (spec example table)", () => {
+  const f = (energies, officialPoints, gapsOnly) => ({ energies: new Set(energies), voltages: new Set(VOLTAGE_ORDER),
+    substations: true, officialPoints, gapsOnly });
+  const solar = { energy_primary: "solar" };
+  assert.equal(officialPointVisible(solar, f(["solar"], true, false)), true);
+  assert.equal(officialPointVisible(solar, f(["solar"], false, false)), false);
+  assert.equal(officialPointVisible(solar, f(["wind"], true, false)), false);
+  assert.equal(officialPointVisible(solar, f(["solar"], true, true)), false);
+  assert.equal(officialPointVisible({ energy_primary: null }, f(["unknown"], true, false)), true);
+  // default filters: toggle on but no energy checked
+  assert.equal(officialPointVisible(solar, initialFilters()), false);
+});
+
+test("official point symbol is a hollow dashed circle in the energy colour", () => {
+  assert.deepEqual(officialPointStyle({ energy_primary: "wind" }),
+    { radius: 6, color: ENERGY_COLORS.wind, weight: 2, dashArray: "3 3", fill: false });
+  assert.equal(officialPointStyle({ energy_primary: null }).color, ENERGY_COLORS.unknown);
+});
+
+test("official point popup states the estimate and the precision", () => {
+  const html = officialPointPopupHtml({ official_id: "tp-re:恆春風力發電站", name: "恆春風力發電站", county: "屏東縣",
+    address: "屏東縣恆春鎮南灣里", capacity_mw: 4.5, energy_primary: "wind", precision: "village", method: "nominatim",
+    source: "南灣里", checked_at: "2026-11-13" });
+  assert.match(html, /<h3>恆春風力發電站<\/h3>/);
+  assert.match(html, /依地址估計/);
+  assert.match(html, /不是 OSM 資料/);
+  assert.match(html, /<th>精確程度<\/th><td>村里中心<\/td>/);
+  assert.match(html, /<th>容量<\/th><td>4.5 MW<\/td>/);
+  assert.match(html, /<th>主要能源<\/th><td>風力<\/td>/);
+  assert.match(html, /<th>查詢日期<\/th><td>2026-11-13<\/td>/);
+  assert.equal(PRECISION_LABELS.road, "路段");
+  assert.equal(PRECISION_LABELS.site, "廠區");
+});
+
+test("official point popup shows missing values and escapes text", () => {
+  const html = officialPointPopupHtml({ name: null, address: null, capacity_mw: null, energy_primary: null,
+    precision: null, checked_at: null });
+  assert.doesNotMatch(html, /null|undefined/);
+  assert.match(html, /<th>容量<\/th><td>未填<\/td>/);
+  assert.match(html, /<th>地址<\/th><td>未填<\/td>/);
+  const escaped = officialPointPopupHtml({ name: "<b>A&B</b>", address: "\"x\"", capacity_mw: 1, energy_primary: "solar",
+    precision: "site", checked_at: "2026-11-13" });
+  assert.match(escaped, /&lt;b&gt;A&amp;B&lt;\/b&gt;/);
+  assert.match(escaped, /&quot;x&quot;/);
+  assert.doesNotMatch(escaped, /<b>/);
 });
