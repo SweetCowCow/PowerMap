@@ -1,6 +1,7 @@
 # Taiwan power map — data pipeline
 # Usage: make data | make extract | make test | make clean
 #        make official-download | make crosswalk-candidates
+#        make boundaries | make web | make test-web | make all
 
 PY        := uv run python
 RAW       := data/raw/taiwan-latest.osm.pbf
@@ -19,6 +20,8 @@ LINES     := data/processed/lines.geojson
 STATS     := data/processed/stats.json
 CROSSWALK := data/official/crosswalk.csv
 CANDIDATES := data/official/crosswalk_candidates.csv
+BOUNDARY_ZIP := data/raw/boundaries/counties.zip
+COUNTIES  := data/processed/counties.geojson
 EXTRACT_OUT    := $(SEQ) $(SUMMARY)
 FACILITIES_OUT := $(FAC_OSM) $(DEDUP_OSM) $(FAC_META)
 ENRICH_OUT     := $(PLANTS) $(DEDUP_LOG) $(UNMATCHED) $(DIFF) $(ENRICH_META)
@@ -28,6 +31,8 @@ MAIN_BBOX               ?= 119.3,21.8,122.2,25.4
 ROOFTOP_THRESHOLD_MW    ?= 1
 DEDUP_DISTANCE_M        ?= 500
 CAPACITY_DIFF_THRESHOLD ?= 0.2
+# County boundary SHP zip (data.gov.tw 7442); default in powermap/boundaries.py
+BOUNDARY_URL            ?=
 # Official snapshot directory; default: the latest data/official/raw/<YYYY-MM-DD>
 OFFICIAL_DIR            ?= $(lastword $(sort $(wildcard data/official/raw/????-??-??)))
 
@@ -47,7 +52,7 @@ $(call mark_stale_if_changed,$(FACILITIES_PARAMS),ROOFTOP_THRESHOLD_MW=$(ROOFTOP
 $(call mark_stale_if_changed,$(OFFICIAL_PARAMS),OFFICIAL_DIR=$(OFFICIAL_DIR),$(OFFICIAL) $(ENRICH_OUT) $(STATS))
 $(call mark_stale_if_changed,$(ENRICH_PARAMS),CAPACITY_DIFF_THRESHOLD=$(CAPACITY_DIFF_THRESHOLD),$(ENRICH_OUT) $(STATS))
 
-.PHONY: all data extract test clean official-download crosswalk-candidates
+.PHONY: all data extract test clean official-download crosswalk-candidates boundaries
 all: data
 
 data: $(STATS)
@@ -94,6 +99,10 @@ official-download:
 # Candidate pairs for reviewing data/official/crosswalk.csv by hand
 crosswalk-candidates: $(FACILITIES_OUT) $(OFFICIAL) powermap/crosswalk.py
 	$(PY) -m powermap.crosswalk --official $(OFFICIAL) --facilities $(FAC_OSM) --output $(CANDIDATES)
+
+# County boundaries for the web base layer (network; not part of `make data`; commit the output)
+boundaries:
+	$(PY) -m powermap.boundaries --zip $(BOUNDARY_ZIP) --output $(COUNTIES) $(if $(BOUNDARY_URL),--url "$(BOUNDARY_URL)")
 
 test:
 	uv run pytest
