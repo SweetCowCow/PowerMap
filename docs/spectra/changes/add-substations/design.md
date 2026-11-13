@@ -78,6 +78,31 @@ Leaflet 的 canvas circleMarker 畫不出方形，所以改用 `L.marker` 加 Di
 
 `WEB_FILES` 加入 `data/processed/substations.geojson`，網頁把它列為必要檔案；缺少時和其他必要檔案一樣顯示錯誤橫幅。
 
+### 電力線與設施共用一張 canvas，變電所圖層放在最上層
+
+**Supersedes**: add-substations / 變電所圖層畫成依電壓著色的方形 DivIcon
+
+方形 DivIcon 的做法不變，只改圖層順序。review 實測（2026-11-13）：Leaflet 的每個 canvas renderer 都會產生一張蓋滿地圖的 canvas，而且會攔下點擊。原本電力線（410）和設施（420）各用一張 canvas，變電所放在中間（415），結果只要開過一次發電設施，下面的變電所和電力線就都點不到（電力線的問題從 change 3 就存在，但當時設施預設不顯示，驗證時沒抓到）。
+
+改法：電力線和設施共用一個 canvas renderer（pane `vectors`，z 410）。`apply()` 每次都先加電力線、再加設施，所以設施畫在上面，點擊也由同一張 canvas 判斷。變電所 pane 改到 z 430，因為它是一個個小方塊元素，pane 本身沒有面積，不會擋住下面的點擊。
+
+### 電壓勾選框同時顯示線段數和變電所數
+
+電壓勾選框同時控制線和變電所，所以每一列的數字改成「N 段・M 座」（線段數取 `stats.by_voltage_class`，變電所數取 `stats.substations_by_voltage_class`），避免讀者以為數字只有一種。
+
+### 部署時為網頁檔案加上版本號
+
+GitHub Pages 對所有檔案都設定快取 10 分鐘。部署後，瀏覽器可能拿到新的 `index.html` 和舊的 `app.js`（實測時發生過多次），新舊混搭就會出錯。GitHub Actions 在 `make web` 之後，把 `index.html` 裡的 `app.js`、`style.css`，以及 `app.js` 裡 import 的 `./lib.js` 都加上 `?v=<commit 前 7 碼>`。原始檔不變，本機預覽不受影響。
+
+### 重複抽查結果
+
+2026-11-13 對 788 個變電所的抽查結果：
+- 沒有同名的 way 和 relation。
+- 任兩點距離在 150 m 內的有 51 對（任何類型都算）。抽看的例子多半是電廠或廠區內相鄰的開關場、配電室，例如 `r3442741`（緊急發電機）和 `w256835088`（變電站）只差約 10 m，但名稱不同。
+- verify 另外算出：53 個 relation 中，有 11 個在 150 m 內有某個 way 的代表點，可能是重複，但沒有逐筆確認。
+
+依「不做去重」的決定，這次照實輸出。如果之後要去重，可以從這 11 組 relation 開始逐筆確認。
+
 ## Implementation Contract
 
 **行為**

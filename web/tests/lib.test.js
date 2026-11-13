@@ -13,6 +13,7 @@ import {
   facilityPopupHtml,
   facilityStyle,
   facilityVisible,
+  failedFiles,
   initialFilters,
   formatCapacity,
   linePopupHtml,
@@ -25,6 +26,7 @@ import {
   substationPopupHtml,
   substationTypeLabel,
   substationVisible,
+  voltageCountLabel,
 } from "../lib.js";
 
 const filters = (energies, voltages = VOLTAGE_ORDER, gapsOnly = false) => ({
@@ -304,4 +306,19 @@ test("substation popup shows missing values and escapes text", () => {
   assert.match(named, /變電所・輸電/);
   assert.match(named, /345 kV/);
   assert.match(named, /<code>345000;161000<\/code>/);
+});
+
+test("failedFiles names each rejected required file", () => {
+  const names = ["plants.geojson", "lines.geojson", "substations.geojson"];
+  const ok = { status: "fulfilled", value: {} };
+  const bad = { status: "rejected", reason: new Error("HTTP 404") };
+  assert.deepEqual(failedFiles(names, [ok, ok, bad]), ["substations.geojson"]);
+  assert.deepEqual(failedFiles(names, [bad, ok, bad]), ["plants.geojson", "substations.geojson"]);
+  assert.deepEqual(failedFiles(names, [ok, ok, ok]), []);
+});
+
+test("voltage checkbox shows line and substation counts", () => {
+  assert.equal(voltageCountLabel(264, 31), "264 段・31 座");
+  assert.equal(voltageCountLabel(1059, 351), "1,059 段・351 座");
+  assert.equal(voltageCountLabel(1, undefined), "1 段・0 座");
 });

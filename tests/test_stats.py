@@ -22,7 +22,7 @@ SUMMARY = {"snapshot": "2026-11-11T21:22:47Z", "excluded_by_region": {"penghu": 
 
 
 def test_all_categories_present_with_zero():
-    stats = compute_stats([plant("solar", ["solar"])], [line("hv")], SUMMARY, {})
+    stats = compute_stats([plant("solar", ["solar"])], [line("hv")], SUMMARY, {}, substations=[])
     assert stats["by_energy"]["geothermal"] == 0
     assert set(stats["by_energy"]) == {"solar", "wind", "hydro", "gas", "coal", "nuclear", "geothermal", "other", "mixed", "unknown"}
     assert set(stats["by_voltage_class"]) == {"ehv", "hv", "mv", "lv", "missing"}
@@ -32,7 +32,7 @@ def test_all_categories_present_with_zero():
 def test_counts_agree_with_datasets():
     plants = [plant("coal", ["coal"], True), plant("unknown", [], True), plant("mixed", ["coal", "gas"])]
     lines = [line("ehv"), line("missing"), line("lv")]
-    stats = compute_stats(plants, lines, SUMMARY, {"excluded_rooftop_solar": 7})
+    stats = compute_stats(plants, lines, SUMMARY, {"excluded_rooftop_solar": 7}, substations=[])
     assert stats["facilities"] == 3 == sum(stats["by_energy"].values())
     assert stats["lines"] == 3 == sum(stats["by_voltage_class"].values())
     assert stats["facilities_missing_capacity"] == 2 and stats["lines_missing_voltage"] == 1
@@ -42,7 +42,7 @@ def test_counts_agree_with_datasets():
 
 
 def test_mixed_counts_under_each_source():
-    stats = compute_stats([plant("mixed", ["coal", "gas"]), plant("gas", ["gas"])], [], SUMMARY, {})
+    stats = compute_stats([plant("mixed", ["coal", "gas"]), plant("gas", ["gas"])], [], SUMMARY, {}, substations=[])
     assert stats["by_energy"]["mixed"] == 1 and stats["by_energy"]["gas"] == 1
     assert stats["by_energy_source"]["coal"] == 1 and stats["by_energy_source"]["gas"] == 2
 
@@ -70,6 +70,7 @@ def test_cli_prints_summary(tmp_path, capsys):
     assert "Official plants:             2" in out
     assert stats["substations"] == 2 and stats["substations_missing_voltage"] == 1
     assert "Substations:                 2" in out
+    assert "  missing voltage:           1" in out.split("Substations:")[1].splitlines()[1]
 
 
 def test_official_counts_agree_with_reports():
@@ -86,7 +87,7 @@ def test_official_counts_agree_with_reports():
                         "linked": 2, "facilities_with_official_id": 3, "capacity_filled": 1, "merged": 1,
                         "capacity_discrepancies": 1,
                         "unmatched": {"no_osm": 1, "unreviewed": 2, "osm_missing": 0}}
-    assert compute_stats(plants, [], SUMMARY, {}, official=official)["official"]["unmatched"]["unreviewed"] == 2
+    assert compute_stats(plants, [], SUMMARY, {}, official=official, substations=[])["official"]["unmatched"]["unreviewed"] == 2
 
 
 def test_substation_counts():
@@ -104,8 +105,8 @@ def test_no_substations():
 
 def test_substation_fields_do_not_change_existing_ones():
     plants, lines = [plant("solar", ["solar"])], [line("hv"), line("missing")]
-    before = compute_stats(plants, lines, SUMMARY, {})
+    before = compute_stats(plants, lines, SUMMARY, {}, substations=[])
     after = compute_stats(plants, lines, SUMMARY, {}, substations=[substation("hv")])
     for key, value in before.items():
-        if key != "built_at":
+        if key != "built_at" and not key.startswith("substations"):
             assert after[key] == value, key

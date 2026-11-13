@@ -256,6 +256,21 @@ export function mainPolygonBounds(geometry) {
   return [[Math.min(...lats), Math.min(...lons)], [Math.max(...lats), Math.max(...lons)]];
 }
 
+/**
+ * Names of required files whose fetch was rejected.
+ * @param {string[]} names required file names, in the same order as `settled`
+ * @param {PromiseSettledResult[]} settled results of Promise.allSettled
+ */
+export function failedFiles(names, settled) {
+  return names.filter((_, i) => settled[i]?.status !== "fulfilled");
+}
+
+/** Voltage checkbox count: lines and substations, e.g. "264 段・31 座". */
+export function voltageCountLabel(lines, substations) {
+  const f = (n) => (n ?? 0).toLocaleString("en-US");
+  return `${f(lines)} 段・${f(substations)} 座`;
+}
+
 /** Default filter state: all voltage classes and substations on, all energies off, gap mode off (lines first). */
 export function initialFilters() {
   return { energies: new Set(), voltages: new Set(VOLTAGE_ORDER), gapsOnly: false, substations: true };

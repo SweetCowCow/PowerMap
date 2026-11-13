@@ -12,6 +12,7 @@ import {
   facilityPopupHtml,
   facilityStyle,
   facilityVisible,
+  failedFiles,
   initialFilters,
   linePopupHtml,
   lineVisible,
@@ -23,6 +24,7 @@ import {
   substationPopupHtml,
   substationTypeLabel,
   substationVisible,
+  voltageCountLabel,
 } from "./lib.js";
 
 /* global L */
@@ -44,7 +46,7 @@ async function loadData() {
     Promise.allSettled(REQUIRED.map((name) => fetchOne(name, "json"))),
     fetchOne("official_diff.csv", "text").then(parseDiffCsv, () => new Map()),
   ]);
-  const failed = REQUIRED.filter((_, i) => required[i].status === "rejected");
+  const failed = failedFiles(REQUIRED, required);
   if (failed.length) return { failed };
   const [plants, lines, substations, stats, counties] = required.map((r) => r.value);
   return { plants, lines, substations, stats, counties, diff, failed: [] };
@@ -62,7 +64,10 @@ function createMap() {
   map.fitBounds(MAIN_ISLAND);
   map.attributionControl.setPrefix(false);
   map.attributionControl.addAttribution('電力資料 © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors');
-  for (const [name, z] of [["counties", 250], ["lines", 410], ["substations", 415], ["facilities", 420]]) {
+  // Lines and facilities share one canvas ("vectors"): a canvas covers the whole map and
+  // swallows clicks, so a second canvas on top would make everything below it unclickable.
+  // Substations are small DOM squares, so their pane can sit on top without blocking.
+  for (const [name, z] of [["counties", 250], ["vectors", 410], ["substations", 430]]) {
     map.createPane(name).style.zIndex = z;
   }
   return map;
@@ -156,6 +161,8 @@ function clusterGroup(energy) {
   });
 }
 
+const formatCount = (c) => (typeof c === "number" ? fmt(c) : escapeHtml(c));
+
 function buildOptions(listId, order, labelFor, countFor, swatchFor, checked) {
   const list = document.getElementById(listId);
   list.innerHTML = order.map((key) => `
@@ -163,7 +170,7 @@ function buildOptions(listId, order, labelFor, countFor, swatchFor, checked) {
       <input type="checkbox" value="${key}"${checked(key) ? " checked" : ""}>
       ${swatchFor(key)}
       <span class="option-label">${escapeHtml(labelFor(key))}</span>
-      <span class="option-count">${fmt(countFor(key))}</span>
+      <span class="option-count">${formatCount(countFor(key))}</span>
     </label></li>`).join("");
   return list;
 }
@@ -349,13 +356,14 @@ async function main() {
   baseLayers(map, counties);
 
   // --- Layers --------------------------------------------------------------------------
-  const lineRenderer = L.canvas({ pane: "lines", padding: 0.3 });
-  const facilityRenderer = L.canvas({ pane: "facilities", padding: 0.3 });
+  // One renderer for lines and facilities; apply() re-adds lines before facilities, so
+  // facilities are drawn (and hit-tested) on top of lines.
+  const vectorRenderer = L.canvas({ pane: "vectors", padding: 0.3 });
 
   const lineItems = lines.features.map((f) => {
     const style = VOLTAGE_STYLES[f.properties.voltage_class] ?? VOLTAGE_STYLES.missing;
     const layer = L.geoJSON(f, {
-      renderer: lineRenderer,
+      renderer: vectorRenderer,
       style: { color: style.color, weight: 1.6, opacity: 0.9, dashArray: style.dashArray },
     });
     layer.bindPopup(() => linePopupHtml(f.properties), { maxWidth: 300 });
@@ -380,7 +388,7 @@ async function main() {
   const clusters = new Map();
   const facilityItems = plants.features.map((f) => {
     const props = f.properties;
-    const layer = facilityLayer(f, facilityRenderer, diff);
+    const layer = facilityLayer(f, vectorRenderer, diff);
     const key = facilityGroupKey(props);
     let group = plantGroup;
     if (key !== null) {
@@ -400,7 +408,7 @@ async function main() {
       ? '<span class="swatch swatch-diamond" aria-hidden="true"></span>'
       : `<span class="swatch" style="--swatch:${ENERGY_COLORS[k]}" aria-hidden="true"></span>`), (k) => initial.energies.has(k));
   const voltageList = buildOptions("voltage-options", VOLTAGE_ORDER, (k) => VOLTAGE_STYLES[k].label,
-    (k) => stats.by_voltage_class?.[k] ?? 0,
+    (k) => voltageCountLabel(stats.by_voltage_class?.[k], stats.substations_by_voltage_class?.[k]),
     (k) => `<span class="swatch swatch-line${VOLTAGE_STYLES[k].dashArray ? " dashed" : ""}" style="--swatch:${VOLTAGE_STYLES[k].color}" aria-hidden="true"></span>`, (k) => initial.voltages.has(k));
   const gapsToggle = document.getElementById("gaps-only");
   const substationToggle = document.getElementById("substations-toggle");

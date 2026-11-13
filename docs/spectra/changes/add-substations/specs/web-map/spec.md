@@ -23,7 +23,7 @@ The web page SHALL load `data/plants.geojson`, `data/lines.geojson`, `data/subst
 
 ### Requirement: Substation layer
 
-The page SHALL draw each substation as a square: filled with its voltage class colour from the line palette when `voltage_class` is not `missing`, and as a hollow `#8a94a0` square when it is `missing`. Symbol size SHALL NOT vary with voltage or capacity. The voltage filter section SHALL include a 變電所 toggle, on by default. A substation SHALL be visible exactly when the toggle is on, its `voltage_class` is checked, and, in data gap mode, its `missing_voltage` is true. Clicking a substation SHALL open a popup with its name (未命名變電所 when null), type label, maximum voltage (未填 when null), `voltage_raw`, operator (未填 when null) and an OSM link, with all data text HTML-escaped and never showing `null` or `undefined`. The search box SHALL list matching substations by name in a separate group of up to 8 results, and selecting one SHALL move the map to it and open its popup. The statistics SHALL show the visible substation count with its total under 目前顯示, and the substation missing-voltage total under 全部資料.
+The page SHALL draw each substation as a square: filled with its voltage class colour from the line palette when `voltage_class` is not `missing`, and as a hollow `#8a94a0` square when it is `missing`. Symbol size SHALL NOT vary with voltage or capacity. Substations SHALL stay clickable after facilities have been shown, and lines and facilities SHALL stay clickable while substations are shown. Each voltage checkbox SHALL show both its line count and its substation count. The voltage filter section SHALL include a 變電所 toggle, on by default. A substation SHALL be visible exactly when the toggle is on, its `voltage_class` is checked, and, in data gap mode, its `missing_voltage` is true. Clicking a substation SHALL open a popup with its name (未命名變電所 when null), type label, maximum voltage (未填 when null), `voltage_raw`, operator (未填 when null) and an OSM link, with all data text HTML-escaped and never showing `null` or `undefined`. The search box SHALL list matching substations by name in a separate group of up to 8 results, and selecting one SHALL move the map to it and open its popup. The statistics SHALL show the visible substation count with its total under 目前顯示, and the substation missing-voltage total under 全部資料.
 
 #### Scenario: Substation visibility
 
@@ -50,6 +50,11 @@ The page SHALL draw each substation as a square: filled with its voltage class c
 | yes | 未填 |
 | null | 未填 |
 | windfarm | windfarm |
+
+#### Scenario: Clickable after showing facilities
+
+- **WHEN** the user checks all energies, then unchecks them, then clicks a substation and a line
+- **THEN** a popup opens for each
 
 #### Scenario: Substation search
 

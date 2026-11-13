@@ -28,6 +28,16 @@ jobs:
         run: make test-web
       - name: Build site
         run: make web
+      # GitHub Pages caches files for 10 minutes; versioned URLs keep index.html, app.js,
+      # lib.js and style.css from the same deploy together.
+      - name: Version asset URLs
+        run: |
+          v="${GITHUB_SHA::7}"
+          sed -i "s#src=\"app.js\"#src=\"app.js?v=$v\"#; s#href=\"style.css\"#href=\"style.css?v=$v\"#" web/index.html
+          sed -i "s#from \"./lib.js\"#from \"./lib.js?v=$v\"#" web/app.js
+          grep -q "app.js?v=$v" web/index.html
+          grep -q "style.css?v=$v" web/index.html
+          grep -q "lib.js?v=$v" web/app.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
