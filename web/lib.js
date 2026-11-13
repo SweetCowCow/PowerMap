@@ -182,6 +182,7 @@ export function statusRowsHtml(status) {
   const label = STATUS_LABELS[status.status] ?? status.status ?? MISSING;
   const rows = [row("運轉狀態", escapeHtml(status.since ? `${label}（${status.since}）` : label))];
   if (status.units) rows.push(row("機組", escapeHtml(status.units)));
+  if (status.note) rows.push(row("備註", escapeHtml(status.note)));
   if (typeof status.source === "string" && /^https?:\/\//.test(status.source)) {
     const checked = status.checked_at ? `（查證 ${status.checked_at}）` : "";
     rows.push(row("狀態來源", `<a href="${escapeHtml(status.source)}" target="_blank" rel="noopener">公開資料</a>${escapeHtml(checked)}`));

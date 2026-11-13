@@ -54,8 +54,8 @@
 
 - `lib.js` 新增 `STATUS_LABELS`（已停止運轉、封存、部分機組已除役）、`statusInactive(status)`（`retired`、`mothballed` 為 true）和 `statusRowsHtml(status)`。
 - `facilityStyle(props, status)`：狀態為 inactive 時，圓點填色改成 `#5c6773`（灰色），核能菱形外框也改成同色；其他情況不變。`officialPointStyle(props, status)` 同理改外框顏色。
-- `facilityPopupHtml`、`officialPointPopupHtml` 加第二個參數 `status`：有狀態時加上「運轉狀態」（標籤＋日期）、「機組」和「狀態來源」連結。
-- 側欄「其他符號」加一列灰色圓點：「已停止運轉或封存（依台電公開資訊人工整理）」。
+- `facilityPopupHtml`、`officialPointPopupHtml` 加第二個參數 `status`：有狀態時加上「運轉狀態」（標籤＋日期）、「機組」、「備註」（`note` 有值時；例如核三可申請再運轉、大林五號機仍作緊急備用，這些是給讀者看的補充）和「狀態來源」連結。
+- 側欄「其他符號」加一列灰色圓點：「深灰色：已停止運轉或封存的電廠（依公開資訊人工整理，見 Popup 的狀態來源）」。來源不只台電，也包含核安會文件與新聞報導，所以不寫「台電」。
 - 篩選、統計不變。
 
 ### make web 多複製一個檔案

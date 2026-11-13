@@ -135,7 +135,7 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 | `units` | 各機組說明 |
 | `source` | 公開來源網址（必須是 http 或 https） |
 | `checked_at` | 查證日期 `YYYY-MM-DD` |
-| `note` | 補充說明 |
+| `note` | 補充說明，會顯示在 Popup 的「備註」 |
 
 修改後執行 `make data`：重複的 id、不合法的 `status`、日期格式錯誤或來源不是網址會讓 `make data` 失敗並印出問題列；不在官方清單的 id 印警告並忽略。狀態會過時，更新資料時要一併複查 `checked_at`。
 

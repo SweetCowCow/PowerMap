@@ -33,7 +33,7 @@ The web page SHALL load `data/plants.geojson`, `data/lines.geojson`, `data/subst
 
 ### Requirement: Operating status display
 
-For a facility with an `official_id`, and for an official point, the page SHALL look up `official_status.json` by `official_id`. When the status is `retired` or `mothballed`, the symbol SHALL use the inactive colour `#5c6773` instead of its energy colour (the nuclear diamond outline and the official point ring included); `partially_retired` and plants without a status SHALL keep their normal colours. When a status exists, the popup SHALL add a 運轉狀態 row with the label (已停止運轉, 封存, 部分機組已除役) followed by `since` when present, a 機組 row when `units` is present, and a link to `source`; all text SHALL be HTML-escaped. Plants without a status SHALL show no status row. The legend SHALL explain the inactive colour. Filters and statistics SHALL NOT change because of status.
+For a facility with an `official_id`, and for an official point, the page SHALL look up `official_status.json` by `official_id`. When the status is `retired` or `mothballed`, the symbol SHALL use the inactive colour `#5c6773` instead of its energy colour (the nuclear diamond outline and the official point ring included); `partially_retired` and plants without a status SHALL keep their normal colours. When a status exists, the popup SHALL add a 運轉狀態 row with the label (已停止運轉, 封存, 部分機組已除役) followed by `since` when present, a 機組 row when `units` is present, a 備註 row when `note` is present, and a link to `source`; all text SHALL be HTML-escaped. Plants without a status SHALL show no status row. The legend SHALL explain the inactive colour. Filters and statistics SHALL NOT change because of status.
 
 #### Scenario: Status symbols and rows
 
