@@ -8,43 +8,48 @@ Build the static web map from committed data files and publish it to GitHub Page
 
 ### Requirement: Static site build
 
-The system SHALL provide `make web`, which creates `web/data/` and copies `plants.geojson`, `lines.geojson`, `substations.geojson`, `official_points.geojson`, `stats.json`, `official_diff.csv` and `counties.geojson` from `data/processed/` into it. `make web` SHALL NOT trigger any data pipeline step, even when pipeline outputs are older than their inputs or when no OSM snapshot exists. When a source file is missing, `make web` SHALL exit non-zero. `web/data/` SHALL be ignored by git. `make all` SHALL run `data` then `web`.
+The system SHALL provide `make web`, which creates `web/data/` and copies `plants.geojson`, `lines.geojson`, `substations.geojson`, `official_points.geojson`, `official_status.json`, `stats.json`, `official_diff.csv` and `counties.geojson` from `data/processed/` into it. `make web` SHALL NOT trigger any data pipeline step, even when pipeline outputs are older than their inputs or when no OSM snapshot exists. When a source file is missing, `make web` SHALL exit non-zero. `web/data/` SHALL be ignored by git. `make all` SHALL run `data` then `web`.
 
 #### Scenario: Build without OSM snapshot
 
 - **WHEN** `make web` runs in a fresh clone with no `data/raw/taiwan-latest.osm.pbf`
-- **THEN** it copies the seven files and does not run uv or any pipeline module
+- **THEN** it copies the eight files and does not run uv or any pipeline module
 
 #### Scenario: Missing source
 
-- **WHEN** `data/processed/official_points.geojson` does not exist
+- **WHEN** `data/processed/official_status.json` does not exist
 - **THEN** `make web` exits non-zero
 
 
 <!-- @trace
-source: locate-official-plants
+source: plant-operating-status
 updated: 2026-11-13
 code:
-  - data/processed/official_points.geojson
-  - web/app.js
-  - data/official/crosswalk.csv
-  - data/processed/plants.geojson
-  - data/processed/unmatched.csv
-  - web/lib.js
-  - web/style.css
   - data/processed/stats.json
-  - data/official/locations.csv
-  - web/index.html
-  - data/processed/dedup_log.csv
-  - powermap/official_points.py
+  - powermap/official.py
+  - powermap/official_status.py
   - Makefile
+  - data/processed/dedup_log.csv
+  - data/processed/official_status.json
   - README.md
-  - powermap/stats.py
+  - web/app.js
+  - web/index.html
+  - web/style.css
+  - web/lib.js
+  - powermap/substations.py
+  - data/processed/plants.geojson
+  - data/processed/substations.geojson
+  - data/official/crosswalk.csv
+  - data/processed/substation_dedup_log.csv
+  - powermap/refresh_report.py
+  - data/official/status.csv
 tests:
-  - web/tests/lib.test.js
-  - tests/test_stats.py
-  - tests/test_official_points.py
   - tests/test_make_web.py
+  - web/tests/lib.test.js
+  - tests/test_official.py
+  - tests/test_official_status.py
+  - tests/test_refresh_report.py
+  - tests/test_substations.py
 -->
 
 ---
