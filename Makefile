@@ -1,5 +1,5 @@
 # Taiwan power map — data pipeline
-# Usage: make data | make extract | make test | make clean
+# Usage: make data | make extract | make test | make clean | make refresh
 #        make official-download | make crosswalk-candidates
 #        make boundaries | make web | make test-web | make all
 
@@ -58,7 +58,7 @@ $(call mark_stale_if_changed,$(FACILITIES_PARAMS),ROOFTOP_THRESHOLD_MW=$(ROOFTOP
 $(call mark_stale_if_changed,$(OFFICIAL_PARAMS),OFFICIAL_DIR=$(OFFICIAL_DIR),$(OFFICIAL) $(ENRICH_OUT) $(STATS))
 $(call mark_stale_if_changed,$(ENRICH_PARAMS),CAPACITY_DIFF_THRESHOLD=$(CAPACITY_DIFF_THRESHOLD),$(ENRICH_OUT) $(STATS))
 
-.PHONY: all data extract test clean official-download crosswalk-candidates boundaries web test-web
+.PHONY: all data extract test clean official-download crosswalk-candidates boundaries web test-web refresh
 # Sequential on purpose: under `make -j`, `web` would otherwise copy data before `data` rewrites it.
 all:
 	$(MAKE) data
@@ -116,6 +116,19 @@ $(STATS): $(EXTRACT_OUT) $(FACILITIES_OUT) $(OFFICIAL) $(ENRICH_OUT) $(LINES) $(
 # Official open data snapshot (network; creates data/official/raw/<date>/, commit it)
 official-download:
 	$(PY) -m powermap.official download --dest data/official/raw
+
+# Monthly refresh (network): new OSM snapshot (kept only when the download succeeds), today's
+# official snapshot (reused when it already exists), rebuild, then a report comparing the
+# outputs with the last commit. Review the report before committing. SNAPSHOT_URL overrides
+# the Geofabrik source (see scripts/download.sh).
+REFRESH_REPORT := data/interim/refresh_report.md
+refresh:
+	rm -f $(RAW).new
+	scripts/download.sh $(RAW).new
+	mv $(RAW).new $(RAW)
+	$(PY) -m powermap.official download --dest data/official/raw --reuse-existing
+	$(MAKE) data
+	$(PY) -m powermap.refresh_report --base-ref HEAD --output $(REFRESH_REPORT)
 
 # Candidate pairs for reviewing data/official/crosswalk.csv by hand
 crosswalk-candidates: $(FACILITIES_OUT) $(OFFICIAL) powermap/crosswalk.py

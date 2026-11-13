@@ -63,12 +63,19 @@ class OfficialDataError(Exception):
 # --- Download -------------------------------------------------------------------
 
 
-def download(dest_root: str | Path, datasets: tuple[Dataset, ...] = DATASETS, now: datetime | None = None) -> Path:
-    """Download all datasets into ``dest_root/<YYYY-MM-DD>/``; all-or-nothing."""
+def download(dest_root: str | Path, datasets: tuple[Dataset, ...] = DATASETS, now: datetime | None = None,
+             reuse_existing: bool = False) -> Path:
+    """Download all datasets into ``dest_root/<YYYY-MM-DD>/``; all-or-nothing.
+
+    An existing date directory is never overwritten: it is an error, or with ``reuse_existing``
+    it is returned unchanged without downloading anything.
+    """
     now = now or datetime.now(timezone.utc)
     dest_root = Path(dest_root)
     target = dest_root / now.strftime("%Y-%m-%d")
     if target.exists():
+        if reuse_existing:
+            return target
         raise FileExistsError(f"snapshot directory already exists: {target}")
     dest_root.mkdir(parents=True, exist_ok=True)
     tmp = Path(tempfile.mkdtemp(prefix=".download-", dir=dest_root))
@@ -269,6 +276,8 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     p_dl = sub.add_parser("download", help="download a dated snapshot")
     p_dl.add_argument("--dest", default=str(DEFAULT_RAW_ROOT))
+    p_dl.add_argument("--reuse-existing", action="store_true",
+                      help="keep today's snapshot directory when it already exists instead of failing")
     p_norm = sub.add_parser("normalize", help="build official_plants.json")
     p_norm.add_argument("--raw-dir", help="snapshot directory (default: latest)")
     p_norm.add_argument("--output", required=True)
@@ -276,6 +285,10 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.command == "download":
+            today = Path(args.dest) / datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            if args.reuse_existing and today.exists():
+                print(f"Reusing existing snapshot {today}")
+                return 0
             target = download(args.dest)
             for entry in json.loads((target / "manifest.json").read_text(encoding="utf-8"))["files"]:
                 print(f"{entry['file']:<18} {entry['bytes']:>8} bytes  sha256 {entry['sha256'][:16]}…")

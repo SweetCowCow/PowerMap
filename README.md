@@ -29,7 +29,8 @@ uv sync
 | `make official-download` | 連網下載一份新的台電官方資料快照到 `data/official/raw/<日期>/`（下載後請 commit） |
 | `make crosswalk-candidates` | 產生 `data/official/crosswalk_candidates.csv`，供人工建立對照表 |
 | `make boundaries` | 連網下載內政部國土測繪中心的縣市界線（data.gov.tw 7442），簡化後輸出 `data/processed/counties.geojson`（下載後請 commit）。不屬於 `make data` |
-| `make web` | 把 `data/processed/` 的六個檔案複製到 `web/data/`，不會觸發資料管線 |
+| `make refresh` | 每月更新：重抓 OSM 快照與當天的台電資料、執行 `make data`，再印出和上次 commit 比較的報告（見「定期更新資料」） |
+| `make web` | 把 `data/processed/` 的八個檔案複製到 `web/data/`，不會觸發資料管線 |
 | `make all` | `make data` 加上 `make web` |
 | `make test` | 執行資料管線的單元測試（pytest） |
 | `make test-web` | 執行網頁的單元測試（`node --test`，不需要 npm 套件） |
@@ -138,6 +139,28 @@ python -m http.server -d web 8000   # 開啟 http://localhost:8000/
 | `note` | 補充說明，會顯示在 Popup 的「備註」 |
 
 修改後執行 `make data`：重複的 id、不合法的 `status`、日期格式錯誤或來源不是網址會讓 `make data` 失敗並印出問題列；不在官方清單的 id 印警告並忽略。狀態會過時，更新資料時要一併複查 `checked_at`。
+
+## 定期更新資料
+
+建議每月一次，或台電、OSM 有重大變動時：
+
+1. `make refresh`：OSM 快照先下載到暫存檔，成功才取代舊檔；台電資料下載到當天的日期目錄（當天已下載過就沿用）；接著執行 `make data`，最後產生報告 `data/interim/refresh_report.md`（也會印在終端）。任何一步失敗就停止，舊快照不會被刪掉。
+2. 看報告的三段：
+   - **資料來源**：OSM 快照時間、台電資料目錄，上次和這次對照。
+   - **數量變化**：設施、電力線、變電所、官方對照等數量的增減，和上次 commit 比較。
+   - **待處理**：要人工處理的項目，最後一行是 `待處理 N 項`。
+3. 依「待處理」逐項處理：
+
+| 報告項目 | 處理方式 |
+| --- | --- |
+| 尚未審閱的官方電廠 | `make crosswalk-candidates`，在 `data/official/crosswalk.csv` 加一列 |
+| 對照表的 OSM id 已失效 | OSM 物件被刪除或換 id，到 `crosswalk.csv` 改成新的 id，或改成 `none` |
+| 對照表警告 | 依訊息修正 `crosswalk.csv` 該列 |
+| 位置表、狀態表被忽略的列 | 該電廠已連到 OSM 或不在官方清單，刪除或修正 `locations.csv`、`status.csv` 該列 |
+| 狀態表查證日期超過一年 | 重新查公開資料，更新 `status.csv` 的內容和 `checked_at` |
+| 新的容量差距 | 檢查是 OSM 還是官方資料的問題（例如機組除役），必要時更新狀態表 |
+
+4. 處理完再跑一次 `make data`，確認報告是 `待處理 0 項`（可用 `uv run python -m powermap.refresh_report --output data/interim/refresh_report.md` 只重產報告），然後 commit `data/official/` 與 `data/processed/`，push 後由 GitHub Actions 部署。
 
 ## 資料原則
 

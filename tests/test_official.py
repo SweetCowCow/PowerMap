@@ -85,6 +85,30 @@ def test_existing_snapshot_not_overwritten(tmp_path):
         download(tmp_path / "raw", _sources(tmp_path), now=NOW)
 
 
+def test_existing_snapshot_reused_on_request(tmp_path):
+    target = tmp_path / "raw" / "2026-11-12"
+    target.mkdir(parents=True)
+    (target / "a.csv").write_text("old", encoding="utf-8")
+    broken = (Dataset("x", "missing", (tmp_path / "nope.json").as_uri(), "a.csv"),)  # would fail if fetched
+    assert download(tmp_path / "raw", broken, now=NOW, reuse_existing=True) == target
+    assert (target / "a.csv").read_text(encoding="utf-8") == "old"
+    assert sorted(p.name for p in (tmp_path / "raw").iterdir()) == ["2026-11-12"]
+
+
+def test_cli_reuse_existing(tmp_path, capsys):
+    today = tmp_path / "raw" / datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today.mkdir(parents=True)
+    assert main(["download", "--dest", str(tmp_path / "raw"), "--reuse-existing"]) == 0
+    assert "Reusing existing snapshot" in capsys.readouterr().out
+    assert list(today.iterdir()) == []
+
+
+def test_cli_existing_without_flag_fails(tmp_path, capsys):
+    (tmp_path / "raw" / datetime.now(timezone.utc).strftime("%Y-%m-%d")).mkdir(parents=True)
+    assert main(["download", "--dest", str(tmp_path / "raw")]) == 1
+    assert "already exists" in capsys.readouterr().err
+
+
 def test_latest_snapshot_picks_newest_date(tmp_path):
     for name in ("2026-11-01", "2026-11-12", ".download-x", "notes"):
         (tmp_path / name).mkdir()
